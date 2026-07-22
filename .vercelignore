@@ -1,0 +1,3 @@
+# Pipeline is Claude Code reference material, not application source.
+# Keep it out of the Vercel build/deploy context.
+pipeline/
