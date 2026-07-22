@@ -1,4 +1,4 @@
-import { deepgramClient } from './client'
+import { getDeepgramClient } from './client'
 
 interface TranscriptResult {
   transcript: string
@@ -6,7 +6,7 @@ interface TranscriptResult {
 }
 
 export async function transcribeAudio(audioUrl: string): Promise<TranscriptResult> {
-  const { result, error } = await deepgramClient.listen.prerecorded.transcribeUrl(
+  const { result, error } = await getDeepgramClient().listen.prerecorded.transcribeUrl(
     { url: audioUrl },
     {
       model: 'nova-2',
