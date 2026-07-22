@@ -13,6 +13,7 @@ import { BrandGuidelines } from '@/components/brands/brand-guidelines'
 import { BrandAssets } from '@/components/brands/brand-assets'
 import { BrandClientAccess } from '@/components/brands/brand-client-access'
 import { BrandContacts } from '@/components/brands/brand-contacts'
+import { KBDocumentList } from '@/components/knowledge-base/kb-document-list'
 
 export default function BrandDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -76,6 +77,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="guidelines">Guidelines</TabsTrigger>
             <TabsTrigger value="assets">Assets</TabsTrigger>
+            <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
             <TabsTrigger value="clients">Client Access</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-6">
@@ -89,6 +91,9 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
           </TabsContent>
           <TabsContent value="assets" className="mt-6">
             <BrandAssets brandId={brand.id} />
+          </TabsContent>
+          <TabsContent value="knowledge-base" className="mt-6">
+            <KBDocumentList brandId={brand.id} />
           </TabsContent>
           <TabsContent value="clients" className="mt-6">
             <BrandClientAccess brandId={brand.id} />

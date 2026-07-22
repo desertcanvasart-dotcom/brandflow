@@ -1,6 +1,7 @@
 import { z } from 'zod/v4'
 import { TRPCError } from '@trpc/server'
 import { createTRPCRouter, orgProcedure, managerProcedure } from '../init'
+import { triggerEmbedding, triggerEmbeddingDeletion, stringifyForEmbedding } from '@/lib/ai/embedding-triggers'
 import type { Database } from '@/types/database'
 
 type BriefRow = Database['public']['Tables']['briefs']['Row']
@@ -68,6 +69,25 @@ export const briefRouter = createTRPCRouter({
         .single<BriefRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Embed brief body for RAG
+      if (input.body && data) {
+        const text = `${input.title}\n\n${stringifyForEmbedding(input.body)}`
+        triggerEmbedding(ctx.orgId, 'brief', data.id, text)
+      }
+
+      // Post system message to project chat
+      if (input.projectId && data) {
+        import('@/lib/chat/system-message').then(({ insertSystemMessage }) =>
+          insertSystemMessage({
+            supabase: ctx.supabase,
+            projectId: input.projectId!,
+            event: 'brief_submitted',
+            content: `New brief submitted: "${input.title}"`,
+          })
+        ).catch(() => {})
+      }
+
       return data
     }),
 
@@ -90,12 +110,22 @@ export const briefRouter = createTRPCRouter({
         .single<BriefRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Embed updated brief body for RAG
+      if (input.body && data) {
+        const text = `${data.title}\n\n${stringifyForEmbedding(input.body)}`
+        triggerEmbedding(ctx.orgId, 'brief', data.id, text)
+      }
+
       return data
     }),
 
   delete: managerProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // Clean up embeddings before deleting
+      triggerEmbeddingDeletion('brief', input.id)
+
       const { error } = await ctx.supabase.from('briefs').delete().eq('id', input.id)
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
       return { success: true }

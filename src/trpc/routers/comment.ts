@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server'
 import { createTRPCRouter, orgProcedure } from '../init'
 import { logActivity } from '@/lib/activity/log'
 import { createNotifications } from '@/lib/notifications/create'
+import { triggerEmbedding, triggerEmbeddingDeletion } from '@/lib/ai/embedding-triggers'
 import type { Database } from '@/types/database'
 
 type CommentRow = Database['public']['Tables']['comments']['Row']
@@ -59,6 +60,11 @@ export const commentRouter = createTRPCRouter({
         .single<CommentRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Embed comment for RAG
+      if (data) {
+        triggerEmbedding(ctx.orgId, 'comment', data.id, input.body)
+      }
 
       // ── Automation hooks ──
       try {
@@ -146,6 +152,12 @@ export const commentRouter = createTRPCRouter({
         .single<CommentRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Re-embed updated comment for RAG
+      if (input.body && data) {
+        triggerEmbedding(ctx.orgId, 'comment', data.id, input.body)
+      }
+
       return data
     }),
 
@@ -164,6 +176,9 @@ export const commentRouter = createTRPCRouter({
   delete: orgProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // Clean up embeddings before deleting
+      triggerEmbeddingDeletion('comment', input.id)
+
       const { error } = await ctx.supabase
         .from('comments')
         .delete()

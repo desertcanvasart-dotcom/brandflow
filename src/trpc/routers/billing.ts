@@ -137,4 +137,100 @@ export const billingRouter = createTRPCRouter({
 
     return { url: session.url }
   }),
+
+  // Billing history: list invoices from Stripe
+  getBillingHistory: orgProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(50).default(10),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { data: org } = await ctx.supabase
+        .from('organizations')
+        .select('stripe_customer_id')
+        .eq('id', ctx.orgId)
+        .single()
+
+      if (!org?.stripe_customer_id) {
+        return { invoices: [] as Array<{ id: string; number: string | null; date: string | null; amount: number; currency: string; status: string | null; pdfUrl: string | null; hostedUrl: string | null }>, hasMore: false }
+      }
+
+      const invoices = await stripe.invoices.list({
+        customer: org.stripe_customer_id,
+        limit: input?.limit ?? 10,
+      })
+
+      return {
+        invoices: invoices.data.map((inv) => ({
+          id: inv.id,
+          number: inv.number,
+          date: inv.created
+            ? new Date(inv.created * 1000).toISOString()
+            : null,
+          amount: inv.amount_paid,
+          currency: inv.currency,
+          status: inv.status,
+          pdfUrl: inv.invoice_pdf,
+          hostedUrl: inv.hosted_invoice_url,
+        })),
+        hasMore: invoices.has_more,
+      }
+    }),
+
+  // Payment method: get masked card info from Stripe
+  getPaymentMethod: orgProcedure.query(async ({ ctx }) => {
+    const { data: org } = await ctx.supabase
+      .from('organizations')
+      .select('stripe_customer_id')
+      .eq('id', ctx.orgId)
+      .single()
+
+    if (!org?.stripe_customer_id) {
+      return null
+    }
+
+    try {
+      const customer = await stripe.customers.retrieve(org.stripe_customer_id)
+
+      if ('deleted' in customer && customer.deleted) return null
+
+      const defaultPmId =
+        typeof customer.invoice_settings?.default_payment_method === 'string'
+          ? customer.invoice_settings.default_payment_method
+          : customer.invoice_settings?.default_payment_method?.id ?? null
+
+      if (!defaultPmId) {
+        // Fallback: check for any card on file
+        const methods = await stripe.paymentMethods.list({
+          customer: org.stripe_customer_id,
+          type: 'card',
+          limit: 1,
+        })
+        const pm = methods.data[0]
+        if (!pm?.card) return null
+        return {
+          brand: pm.card.brand,
+          last4: pm.card.last4,
+          expMonth: pm.card.exp_month,
+          expYear: pm.card.exp_year,
+        }
+      }
+
+      const pm = await stripe.paymentMethods.retrieve(defaultPmId)
+      if (!pm.card) return null
+
+      return {
+        brand: pm.card.brand,
+        last4: pm.card.last4,
+        expMonth: pm.card.exp_month,
+        expYear: pm.card.exp_year,
+      }
+    } catch {
+      // If Stripe call fails, return null gracefully
+      return null
+    }
+  }),
 })

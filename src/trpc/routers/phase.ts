@@ -101,6 +101,21 @@ export const phaseRouter = createTRPCRouter({
       return { success: true }
     }),
 
+  listMilestones: orgProcedure
+    .input(z.object({
+      projectIds: z.array(z.string().uuid()).min(1).max(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { data } = await ctx.supabase
+        .from('phases')
+        .select('id, project_id, milestone_name, milestone_date')
+        .in('project_id', input.projectIds)
+        .not('milestone_date', 'is', null)
+        .order('milestone_date', { ascending: true })
+
+      return (data ?? []) as { id: string; project_id: string; milestone_name: string | null; milestone_date: string }[]
+    }),
+
   delete: managerProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {

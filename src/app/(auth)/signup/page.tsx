@@ -60,7 +60,7 @@ export default function SignupPage() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
-        <CardDescription>Get started with BrandFlow</CardDescription>
+        <CardDescription>Get started with Agency Beats</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSignup} className="space-y-4">

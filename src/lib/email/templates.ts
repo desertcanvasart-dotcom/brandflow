@@ -9,14 +9,14 @@ function wrapEmailHtml(title: string, bodyHtml: string): string {
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;">
         <tr><td style="background:#18181b;padding:24px 32px;">
-          <span style="color:#ffffff;font-size:18px;font-weight:700;">BrandFlow</span>
+          <span style="color:#ffffff;font-size:18px;font-weight:700;">Agency Beats</span>
         </td></tr>
         <tr><td style="padding:32px;">
           <h2 style="margin:0 0 16px;font-size:18px;color:#18181b;">${title}</h2>
           ${bodyHtml}
         </td></tr>
         <tr><td style="padding:16px 32px;background:#f4f4f5;text-align:center;">
-          <span style="color:#71717a;font-size:12px;">Sent by BrandFlow. Manage your notification preferences in Settings.</span>
+          <span style="color:#71717a;font-size:12px;">Sent by Agency Beats. Manage your notification preferences in Settings.</span>
         </td></tr>
       </table>
     </td></tr>
@@ -138,6 +138,152 @@ export function meetingStartingSoonEmail(params: {
         <strong>${params.meetingTitle}</strong> is starting at <strong>${params.startTime}</strong>.
       </p>
       ${actionButton(url, 'Join Meeting')}
+    `),
+  }
+}
+
+export function meetingInviteEmail(params: {
+  meetingTitle: string
+  scheduledAt: string
+  durationMinutes: number
+  meetingUrl: string
+  organizerName: string
+  description?: string
+}): { subject: string; html: string } {
+  const dateStr = new Date(params.scheduledAt).toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+  return {
+    subject: `Meeting Invite: ${params.meetingTitle}`,
+    html: wrapEmailHtml('Meeting Invitation', `
+      <p style="color:#3f3f46;font-size:14px;line-height:1.6;margin:0 0 12px;">
+        <strong>${params.organizerName}</strong> has invited you to a meeting.
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr>
+          <td style="padding:8px 0;color:#71717a;font-size:13px;width:100px;">Meeting</td>
+          <td style="padding:8px 0;color:#18181b;font-size:14px;font-weight:500;">${params.meetingTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#71717a;font-size:13px;">When</td>
+          <td style="padding:8px 0;color:#18181b;font-size:14px;">${dateStr}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#71717a;font-size:13px;">Duration</td>
+          <td style="padding:8px 0;color:#18181b;font-size:14px;">${params.durationMinutes} minutes</td>
+        </tr>
+      </table>
+      ${params.description ? `<p style="color:#3f3f46;font-size:13px;line-height:1.5;margin:0 0 16px;padding:12px;background:#f4f4f5;border-radius:6px;">${params.description}</p>` : ''}
+      <p style="color:#71717a;font-size:12px;margin:0 0 4px;">A calendar invite (.ics) is attached.</p>
+      ${actionButton(params.meetingUrl, 'Join Meeting')}
+    `),
+  }
+}
+
+export function meetingSummaryEmail(params: {
+  meetingTitle: string
+  date: string
+  duration: string
+  summary: string
+  actionItems: Array<{ task: string; assignee?: string }>
+  transcriptUrl: string
+}): { subject: string; html: string } {
+  const actionItemsHtml = params.actionItems.length > 0
+    ? `<ul style="padding-left:20px;margin:8px 0;">${params.actionItems.map((item) =>
+      `<li style="color:#3f3f46;font-size:13px;line-height:1.6;margin:4px 0;">
+        ${item.task}${item.assignee ? ` <span style="color:#71717a;">— ${item.assignee}</span>` : ''}
+      </li>`
+    ).join('')}</ul>`
+    : '<p style="color:#71717a;font-size:13px;">No action items identified.</p>'
+
+  return {
+    subject: `Meeting Summary: ${params.meetingTitle}`,
+    html: wrapEmailHtml('Meeting Summary', `
+      <table style="width:100%;border-collapse:collapse;margin:0 0 16px;">
+        <tr>
+          <td style="padding:6px 0;color:#71717a;font-size:13px;width:80px;">Meeting</td>
+          <td style="padding:6px 0;color:#18181b;font-size:14px;font-weight:500;">${params.meetingTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#71717a;font-size:13px;">Date</td>
+          <td style="padding:6px 0;color:#18181b;font-size:14px;">${params.date}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#71717a;font-size:13px;">Duration</td>
+          <td style="padding:6px 0;color:#18181b;font-size:14px;">${params.duration}</td>
+        </tr>
+      </table>
+      <h3 style="margin:16px 0 8px;font-size:15px;color:#18181b;">Summary</h3>
+      <p style="color:#3f3f46;font-size:13px;line-height:1.6;margin:0 0 16px;">${params.summary}</p>
+      <h3 style="margin:16px 0 8px;font-size:15px;color:#18181b;">Action Items</h3>
+      ${actionItemsHtml}
+      ${actionButton(params.transcriptUrl, 'View Full Transcript')}
+    `),
+  }
+}
+
+export function dmReceivedEmail(params: {
+  senderName: string
+  messagePreview: string
+  chatUrl: string
+}): { subject: string; html: string } {
+  const url = `${APP_URL}${params.chatUrl}`
+  return {
+    subject: `New message from ${params.senderName}`,
+    html: wrapEmailHtml('New Direct Message', `
+      <p style="color:#3f3f46;font-size:14px;line-height:1.6;margin:0;">
+        <strong>${params.senderName}</strong> sent you a direct message:
+      </p>
+      <blockquote style="margin:12px 0;padding:12px 16px;background:#f4f4f5;border-left:3px solid #d4d4d8;border-radius:4px;color:#52525b;font-size:14px;">
+        ${params.messagePreview}
+      </blockquote>
+      ${actionButton(url, 'View Message')}
+    `),
+  }
+}
+
+export function threadReplyEmail(params: {
+  replierName: string
+  messagePreview: string
+  chatUrl: string
+}): { subject: string; html: string } {
+  const url = `${APP_URL}${params.chatUrl}`
+  return {
+    subject: `${params.replierName} replied to your message`,
+    html: wrapEmailHtml('New Thread Reply', `
+      <p style="color:#3f3f46;font-size:14px;line-height:1.6;margin:0;">
+        <strong>${params.replierName}</strong> replied to your message:
+      </p>
+      <blockquote style="margin:12px 0;padding:12px 16px;background:#f4f4f5;border-left:3px solid #d4d4d8;border-radius:4px;color:#52525b;font-size:14px;">
+        ${params.messagePreview}
+      </blockquote>
+      ${actionButton(url, 'View Thread')}
+    `),
+  }
+}
+
+export function chatMentionEmail(params: {
+  mentionedByName: string
+  channelName: string
+  messagePreview: string
+  chatUrl: string
+}): { subject: string; html: string } {
+  const url = `${APP_URL}${params.chatUrl}`
+  return {
+    subject: `${params.mentionedByName} mentioned you in ${params.channelName}`,
+    html: wrapEmailHtml('You were mentioned', `
+      <p style="color:#3f3f46;font-size:14px;line-height:1.6;margin:0;">
+        <strong>${params.mentionedByName}</strong> mentioned you in <strong>${params.channelName}</strong>:
+      </p>
+      <blockquote style="margin:12px 0;padding:12px 16px;background:#f4f4f5;border-left:3px solid #d4d4d8;border-radius:4px;color:#52525b;font-size:14px;">
+        ${params.messagePreview}
+      </blockquote>
+      ${actionButton(url, 'View Message')}
     `),
   }
 }

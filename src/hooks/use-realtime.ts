@@ -86,6 +86,29 @@ export function useRealtimeInvalidation() {
           utils.annotation.list.invalidate()
         }
       )
+      // Meeting rooms: sessions & participants
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'meeting_sessions' },
+        () => {
+          utils.meetingRoom.listSessions.invalidate()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'session_participants' },
+        () => {
+          utils.meetingRoom.getSession.invalidate()
+        }
+      )
+      // Team Chat: global unread badge updates
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'channel_messages' },
+        () => {
+          utils.chat.getChannelByProject.invalidate()
+        }
+      )
       .subscribe()
 
     return () => {

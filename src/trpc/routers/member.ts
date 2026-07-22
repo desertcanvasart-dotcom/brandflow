@@ -4,19 +4,23 @@ import { createTRPCRouter, orgProcedure, adminProcedure, authedProcedure } from 
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { resend } from '@/lib/email/client'
 import { canAddSeat } from '@/lib/stripe/helpers'
+import { logActivity } from '@/lib/activity/log'
 import type { Database } from '@/types/database'
 
 type InvitationRow = Database['public']['Tables']['invitations']['Row']
 type MemberRow = Database['public']['Tables']['organization_members']['Row']
+type MemberWithDepartment = MemberRow & {
+  department: { id: string; name: string; color: string } | null
+}
 
 export const memberRouter = createTRPCRouter({
   list: orgProcedure.query(async ({ ctx }) => {
     const { data } = await ctx.supabase
       .from('organization_members')
-      .select('*')
+      .select('*, department:departments(id, name, color)')
       .eq('organization_id', ctx.orgId)
       .order('created_at', { ascending: true })
-      .returns<MemberRow[]>()
+      .returns<MemberWithDepartment[]>()
 
     return data ?? []
   }),
@@ -25,6 +29,8 @@ export const memberRouter = createTRPCRouter({
     .input(z.object({
       email: z.string().email(),
       role: z.enum(['admin', 'manager', 'creator', 'developer', 'viewer']),
+      departmentId: z.string().uuid().optional(),
+      jobTitle: z.string().max(100).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Plan enforcement: check seat limits
@@ -44,6 +50,8 @@ export const memberRouter = createTRPCRouter({
           email: input.email,
           role: input.role,
           invited_by: ctx.user.id,
+          department_id: input.departmentId ?? null,
+          job_title: input.jobTitle ?? null,
         })
         .select()
         .single<InvitationRow>()
@@ -61,11 +69,11 @@ export const memberRouter = createTRPCRouter({
 
       try {
         await resend.emails.send({
-          from: 'BrandFlow <noreply@brandflow.app>',
+          from: 'Agency Beats <noreply@agencybeats.app>',
           to: input.email,
-          subject: 'You\'ve been invited to BrandFlow',
+          subject: 'You\'ve been invited to Agency Beats',
           html: `
-            <h2>You've been invited to join an organization on BrandFlow</h2>
+            <h2>You've been invited to join an organization on Agency Beats</h2>
             <p>Click the link below to accept the invitation:</p>
             <a href="${inviteUrl}">${inviteUrl}</a>
             <p>This invitation expires in 7 days.</p>
@@ -75,6 +83,17 @@ export const memberRouter = createTRPCRouter({
         // Email sending is non-critical in development
         console.warn('Failed to send invite email. Invite token:', invitation.token)
       }
+
+      // Audit log
+      await logActivity({
+        supabase: ctx.supabase,
+        orgId: ctx.orgId,
+        actorId: ctx.user.id,
+        action: 'user_invited',
+        entityType: 'member',
+        entityId: invitation.id,
+        metadata: { email: invitation.email, role: invitation.role },
+      })
 
       return invitation
     }),
@@ -112,6 +131,8 @@ export const memberRouter = createTRPCRouter({
           user_id: userId,
           role: invitation.role,
           display_name: ctx.user!.email?.split('@')[0] || 'User',
+          department_id: invitation.department_id ?? null,
+          job_title: invitation.job_title ?? null,
         })
 
       if (memberError) {
@@ -134,6 +155,25 @@ export const memberRouter = createTRPCRouter({
         .from('invitations')
         .update({ status: 'accepted' as const })
         .eq('id', invitation.id)
+
+      // Post "member joined" system message in all project channels
+      const memberName = ctx.user!.email?.split('@')[0] || 'A new member'
+      const { data: orgChannels } = await supabaseAdmin
+        .from('channels')
+        .select('id')
+        .eq('organization_id', invitation.organization_id)
+        .eq('type', 'project')
+
+      if (orgChannels?.length) {
+        await supabaseAdmin.from('channel_messages').insert(
+          orgChannels.map((ch) => ({
+            channel_id: ch.id,
+            user_id: null as unknown as string,
+            content: `${memberName} has joined the team`,
+            attachments: JSON.stringify([{ type: 'system', event: 'member_joined' }]),
+          }))
+        )
+      }
 
       return { organizationId: invitation.organization_id }
     }),
@@ -159,10 +199,105 @@ export const memberRouter = createTRPCRouter({
         await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
           app_metadata: { user_role: input.role },
         })
+
+        // Audit log
+        await logActivity({
+          supabase: ctx.supabase,
+          orgId: ctx.orgId,
+          actorId: ctx.user.id,
+          action: 'role_changed',
+          entityType: 'member',
+          entityId: data.id,
+          metadata: { newRole: input.role },
+        })
       }
 
       return data
     }),
+
+  updateMember: adminProcedure
+    .input(z.object({
+      memberId: z.string().uuid(),
+      role: z.enum(['admin', 'manager', 'creator', 'developer', 'viewer']).optional(),
+      departmentId: z.string().uuid().nullable().optional(),
+      jobTitle: z.string().max(100).nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const updates: Record<string, unknown> = {}
+      if (input.role !== undefined) updates.role = input.role
+      if (input.departmentId !== undefined) updates.department_id = input.departmentId
+      if (input.jobTitle !== undefined) updates.job_title = input.jobTitle
+
+      const { data, error } = await supabaseAdmin
+        .from('organization_members')
+        .update(updates)
+        .eq('id', input.memberId)
+        .eq('organization_id', ctx.orgId)
+        .select('*, department:departments(id, name, color)')
+        .single()
+        .returns<MemberWithDepartment>()
+
+      if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Update JWT metadata if role changed
+      if (input.role && data) {
+        await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+          app_metadata: { user_role: input.role },
+        })
+      }
+
+      return data
+    }),
+
+  getWorkloads: orgProcedure.query(async ({ ctx }) => {
+    // 1. Get all project IDs for this org
+    const { data: projects } = await ctx.supabase
+      .from('projects')
+      .select('id')
+      .eq('organization_id', ctx.orgId)
+
+    const projectIds = (projects ?? []).map((p) => p.id)
+    if (projectIds.length === 0) return []
+
+    // 2. Fetch all tasks with assignees in one query
+    const COMPLETED_STATUSES = ['done', 'published']
+    const { data: tasks } = await ctx.supabase
+      .from('tasks')
+      .select('assignee_id, status, due_date, project_id')
+      .in('project_id', projectIds)
+      .not('assignee_id', 'is', null)
+
+    // 3. Aggregate per-member in memory
+    const now = new Date().toISOString()
+    const byMember: Record<string, {
+      activeTasks: number
+      projectIds: Set<string>
+      overdueTasks: number
+    }> = {}
+
+    for (const t of tasks ?? []) {
+      if (!t.assignee_id) continue
+      if (!byMember[t.assignee_id]) {
+        byMember[t.assignee_id] = { activeTasks: 0, projectIds: new Set(), overdueTasks: 0 }
+      }
+      const isCompleted = COMPLETED_STATUSES.includes(t.status)
+      if (!isCompleted) {
+        byMember[t.assignee_id].activeTasks++
+        byMember[t.assignee_id].projectIds.add(t.project_id)
+        if (t.due_date && t.due_date < now) {
+          byMember[t.assignee_id].overdueTasks++
+        }
+      }
+    }
+
+    // 4. Convert Sets to counts and return
+    return Object.entries(byMember).map(([userId, data]) => ({
+      userId,
+      activeTasks: data.activeTasks,
+      projectCount: data.projectIds.size,
+      overdueTasks: data.overdueTasks,
+    }))
+  }),
 
   remove: adminProcedure
     .input(z.object({ memberId: z.string().uuid() }))

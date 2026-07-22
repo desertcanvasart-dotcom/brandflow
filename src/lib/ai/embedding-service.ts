@@ -42,6 +42,17 @@ export async function upsertEmbeddings({
   // Bulk insert — supabase accepts arrays
   const { error } = await supabaseAdmin.from('embeddings').insert(rows as any)
   if (error) console.error('[embeddings] Insert error:', error.message)
+
+  // Update chunk_count on source document if applicable
+  if (sourceType === 'document') {
+    await supabaseAdmin
+      .from('knowledge_base_documents')
+      .update({ chunk_count: chunks.length })
+      .eq('id', sourceId)
+      .then(({ error: updateErr }) => {
+        if (updateErr) console.error('[embeddings] chunk_count update error:', updateErr.message)
+      })
+  }
 }
 
 interface SearchParams {

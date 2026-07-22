@@ -1,41 +1,106 @@
 'use client'
 
-import { useState } from 'react'
-import { Bell, CheckCheck } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Bell, CheckCheck, Search, Filter, X } from 'lucide-react'
 import { TopBar } from '@/components/layout/top-bar'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { trpc } from '@/trpc/client'
 import { NotificationItem } from '@/components/notifications/notification-item'
 import { cn } from '@/lib/utils'
+import { NOTIFICATION_TYPE_LABELS } from '@/lib/constants'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { toast } from 'sonner'
+import type { NotificationType } from '@/types/enums'
 
-type TabValue = 'all' | 'unread'
+type TabValue = 'all' | 'unread' | 'archived'
+
+const EVENT_TYPES: NotificationType[] = [
+  'task_assigned',
+  'task_status_changed',
+  'comment_added',
+  'due_date_approaching',
+  'content_scheduled',
+  'content_published',
+  'meeting_starting',
+]
 
 export default function NotificationsPage() {
   const [tab, setTab] = useState<TabValue>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [typeFilters, setTypeFilters] = useState<string[]>([])
+  const [filterOpen, setFilterOpen] = useState(false)
+
+  const isArchived = tab === 'archived'
   const unreadOnly = tab === 'unread'
 
   const utils = trpc.useUtils()
+
+  // Debounce search
+  const debounceRef = useMemo(() => {
+    let timeout: NodeJS.Timeout
+    return (value: string) => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => setDebouncedQuery(value), 300)
+    }
+  }, [])
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value)
+    debounceRef(value)
+  }
 
   const { data: unreadCount } = trpc.notification.unreadCount.useQuery(
     undefined,
     { refetchInterval: 30_000 }
   )
 
+  // Use search endpoint if filters are active, otherwise use list
+  const hasFilters = debouncedQuery || typeFilters.length > 0
+  const useSearch = hasFilters
+
+  const listQuery = trpc.notification.list.useInfiniteQuery(
+    { limit: 20, unreadOnly, isArchived, grouped: !isArchived },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !useSearch,
+    }
+  )
+
+  const searchQueryResult = trpc.notification.search.useInfiniteQuery(
+    {
+      limit: 20,
+      query: debouncedQuery || undefined,
+      types: typeFilters.length > 0 ? typeFilters : undefined,
+      isRead: unreadOnly ? false : undefined,
+      isArchived,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: useSearch,
+    }
+  )
+
+  const activeQuery = useSearch ? searchQueryResult : listQuery
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-  } = trpc.notification.list.useInfiniteQuery(
-    { limit: 20, unreadOnly },
-    { getNextPageParam: (lastPage) => lastPage.nextCursor }
-  )
+  } = activeQuery
 
   const markAsRead = trpc.notification.markAsRead.useMutation({
     onSuccess: () => {
       utils.notification.unreadCount.invalidate()
       utils.notification.list.invalidate()
+      utils.notification.search.invalidate()
     },
   })
 
@@ -43,6 +108,7 @@ export default function NotificationsPage() {
     onSuccess: () => {
       utils.notification.unreadCount.invalidate()
       utils.notification.list.invalidate()
+      utils.notification.search.invalidate()
     },
   })
 
@@ -50,11 +116,49 @@ export default function NotificationsPage() {
     onSuccess: () => {
       utils.notification.unreadCount.invalidate()
       utils.notification.list.invalidate()
+      utils.notification.search.invalidate()
     },
+  })
+
+  const archiveNotification = trpc.notification.archive.useMutation({
+    onSuccess: () => {
+      utils.notification.list.invalidate()
+      utils.notification.search.invalidate()
+      toast.success('Notification archived')
+    },
+  })
+
+  const unarchiveNotification = trpc.notification.unarchive.useMutation({
+    onSuccess: () => {
+      utils.notification.list.invalidate()
+      utils.notification.search.invalidate()
+      toast.success('Notification restored')
+    },
+  })
+
+  const executeAction = trpc.notification.executeAction.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(result.message)
+        utils.notification.list.invalidate()
+        utils.notification.search.invalidate()
+      } else {
+        toast.error(result.message)
+      }
+    },
+    onError: (err) => toast.error(err.message),
   })
 
   const notifications = data?.pages.flatMap((page) => page.items) ?? []
   const count = unreadCount ?? 0
+
+  const activeFilterCount = typeFilters.length
+
+  function toggleTypeFilter(type: string) {
+    setTypeFilters((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }
 
   return (
     <>
@@ -90,37 +194,102 @@ export default function NotificationsPage() {
           )}
         </div>
 
+        {/* Search + Filter bar */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('')
+                  setDebouncedQuery('')
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="relative">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+                {activeFilterCount > 0 && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Filter by type</div>
+                <div className="space-y-2">
+                  {EVENT_TYPES.map((type) => (
+                    <label
+                      key={type}
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={typeFilters.includes(type)}
+                        onCheckedChange={() => toggleTypeFilter(type)}
+                      />
+                      {NOTIFICATION_TYPE_LABELS[type]}
+                    </label>
+                  ))}
+                </div>
+                {typeFilters.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTypeFilters([])}
+                    className="w-full"
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
         {/* Tabs */}
         <div className="flex items-center gap-1 rounded-lg bg-muted p-1 w-fit">
-          <button
-            type="button"
-            onClick={() => setTab('all')}
-            className={cn(
-              'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
-              tab === 'all'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('unread')}
-            className={cn(
-              'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
-              tab === 'unread'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Unread
-            {count > 0 && (
-              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
-                {count > 99 ? '99+' : count}
-              </span>
-            )}
-          </button>
+          {(['all', 'unread', 'archived'] as TabValue[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={cn(
+                'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
+                tab === t
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {t === 'all' && 'All'}
+              {t === 'unread' && (
+                <>
+                  Unread
+                  {count > 0 && (
+                    <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                </>
+              )}
+              {t === 'archived' && 'Archived'}
+            </button>
+          ))}
         </div>
 
         {/* Notification list */}
@@ -146,9 +315,22 @@ export default function NotificationsPage() {
               <NotificationItem
                 key={notification.id}
                 notification={notification}
+                isArchived={isArchived}
                 onRead={() => markAsRead.mutate({ id: notification.id })}
                 onDelete={() =>
                   deleteNotification.mutate({ id: notification.id })
+                }
+                onArchive={() =>
+                  archiveNotification.mutate({ id: notification.id })
+                }
+                onUnarchive={() =>
+                  unarchiveNotification.mutate({ id: notification.id })
+                }
+                onAction={(actionType) =>
+                  executeAction.mutate({
+                    notificationId: notification.id,
+                    actionType: actionType as 'approve_task' | 'reject_task' | 'mark_complete' | 'acknowledge',
+                  })
                 }
               />
             ))}
@@ -173,9 +355,13 @@ export default function NotificationsPage() {
               <Bell className="h-12 w-12 mx-auto text-muted-foreground/50" />
               <h3 className="text-lg font-medium mt-4">No notifications</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {unreadOnly
-                  ? 'You have no unread notifications'
-                  : 'When something happens, you\u2019ll see it here'}
+                {isArchived
+                  ? 'No archived notifications'
+                  : unreadOnly
+                    ? 'You have no unread notifications'
+                    : hasFilters
+                      ? 'No notifications match your filters'
+                      : 'When something happens, you\u2019ll see it here'}
               </p>
             </div>
           </div>

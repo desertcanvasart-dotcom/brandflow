@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "BrandFlow",
+  title: "Agency Beats",
   description: "Agency Project & Content Operations Platform",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 export default function RootLayout({

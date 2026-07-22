@@ -61,11 +61,40 @@ export const taskRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { data: tasks } = await ctx.supabase
         .from('tasks')
-        .select('*, projects!inner(name)')
+        .select('*, projects!inner(name, brand_id, brands(id, name, logo_url))')
         .in('project_id', input.projectIds)
         .order('sort_order', { ascending: true })
 
-      return (tasks ?? []) as (TaskRow & { projects: { name: string } })[]
+      type TaskWithProject = TaskRow & {
+        projects: {
+          name: string
+          brand_id: string
+          brands: { id: string; name: string; logo_url: string | null }
+        }
+      }
+
+      const typedTasks = (tasks ?? []) as TaskWithProject[]
+
+      // Fetch assignee data separately (no FK from tasks.assignee_id to organization_members)
+      const assigneeIds = [...new Set(typedTasks.map((t) => t.assignee_id).filter(Boolean))] as string[]
+      let memberMap = new Map<string, { user_id: string; display_name: string | null; avatar_url: string | null }>()
+
+      if (assigneeIds.length > 0) {
+        const { data: members } = await ctx.supabase
+          .from('organization_members')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', assigneeIds)
+          .eq('organization_id', ctx.orgId)
+
+        for (const m of members ?? []) {
+          memberMap.set(m.user_id, m)
+        }
+      }
+
+      return typedTasks.map((t) => ({
+        ...t,
+        assignee: t.assignee_id ? memberMap.get(t.assignee_id) ?? null : null,
+      }))
     }),
 
   getById: orgProcedure
@@ -322,6 +351,18 @@ export const taskRouter = createTRPCRouter({
               link: taskLink,
               metadata: { taskTitle: oldTask.title, projectName, oldStatus: oldTask.status, newStatus: input.status },
             })
+          }
+
+          // Post system message to project chat when task is done
+          if (input.status === 'done' && oldTask.project_id) {
+            import('@/lib/chat/system-message').then(({ insertSystemMessage }) =>
+              insertSystemMessage({
+                supabase: ctx.supabase,
+                projectId: oldTask.project_id,
+                event: 'task_completed',
+                content: `Task "${oldTask.title}" has been marked as done`,
+              })
+            ).catch(() => {})
           }
         }
 

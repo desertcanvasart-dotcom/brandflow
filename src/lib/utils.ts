@@ -34,3 +34,8 @@ export function getInitials(name: string) {
     .toUpperCase()
     .slice(0, 2)
 }
+
+export function generateRoomSlug(projectName: string): string {
+  const { nanoid } = require('nanoid')
+  return `${slugify(projectName)}-${nanoid(6)}`
+}

@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server'
 import { nanoid } from 'nanoid'
 import { createTRPCRouter, orgProcedure, managerProcedure } from '../init'
 import { createLiveKitToken, roomService } from '@/lib/livekit/server'
+import { triggerEmbedding, triggerEmbeddingDeletion } from '@/lib/ai/embedding-triggers'
 import type { Database } from '@/types/database'
 
 type MeetingRow = Database['public']['Tables']['meetings']['Row']
@@ -20,7 +21,7 @@ export const meetingRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       let query = ctx.supabase
         .from('meetings')
-        .select('*, meeting_participants(id, user_id, role)')
+        .select('*, meeting_participants(id, user_id, role), brands(id, name), projects(id, name)')
         .eq('organization_id', ctx.orgId)
         .order('scheduled_at', { ascending: false })
 
@@ -30,7 +31,11 @@ export const meetingRouter = createTRPCRouter({
       if (input?.dateFrom) query = query.gte('scheduled_at', input.dateFrom)
       if (input?.dateTo) query = query.lte('scheduled_at', input.dateTo)
 
-      const { data } = await query
+      const { data } = await query.returns<(MeetingRow & {
+        meeting_participants: { id: string; user_id: string; role: string }[]
+        brands: { id: string; name: string } | null
+        projects: { id: string; name: string } | null
+      })[]>()
       return data ?? []
     }),
 
@@ -126,12 +131,21 @@ export const meetingRouter = createTRPCRouter({
         .single<MeetingRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Embed transcript for RAG when it's saved
+      if (input.transcript && data) {
+        triggerEmbedding(ctx.orgId, 'meeting_transcript', data.id, input.transcript)
+      }
+
       return data
     }),
 
   delete: managerProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // Clean up embeddings before deleting
+      triggerEmbeddingDeletion('meeting_transcript', input.id)
+
       const { error } = await ctx.supabase.from('meetings').delete().eq('id', input.id)
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
       return { success: true }
@@ -253,7 +267,7 @@ export const meetingRouter = createTRPCRouter({
     .query(async ({ ctx }) => {
       const { data } = await ctx.supabase
         .from('meetings')
-        .select('*, meeting_participants!inner(user_id)')
+        .select('*, meeting_participants!inner(user_id), brands(id, name), projects(id, name)')
         .eq('organization_id', ctx.orgId)
         .eq('meeting_participants.user_id', ctx.user.id)
         .in('status', ['scheduled', 'in_progress'])

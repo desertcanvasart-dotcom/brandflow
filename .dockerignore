@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env*
+!.env.example
+Dockerfile
+docker-compose*
+.dockerignore
+.claude
+docs
+*.md
+.eslintrc*
+.prettierrc*

@@ -3,16 +3,35 @@ import { createTRPCRouter, orgProcedure } from '../init'
 import { subDays, startOfDay, startOfWeek, startOfMonth, format } from 'date-fns'
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, PLATFORM_LABELS } from '@/lib/constants'
 import type { TaskStatus, ContentPlatform } from '@/types/enums'
+import { generateText } from 'ai'
+import { defaultModel } from '@/lib/ai/provider'
 
 const analyticsInput = z.object({
   brandId: z.string().uuid().optional(),
-  dateRange: z.enum(['7d', '30d', '90d', 'all']).optional().default('30d'),
+  dateRange: z.enum(['7d', '30d', '90d', 'year', 'all']).optional().default('30d'),
 })
 
-function getDateFrom(range: string): string | null {
+function getDaysForRange(range: string): number | null {
   if (range === 'all') return null
-  const days = range === '7d' ? 7 : range === '30d' ? 30 : 90
+  if (range === '7d') return 7
+  if (range === '30d') return 30
+  if (range === '90d') return 90
+  if (range === 'year') return 365
+  return 30
+}
+
+function getDateFrom(range: string): string | null {
+  const days = getDaysForRange(range)
+  if (days === null) return null
   return subDays(new Date(), days).toISOString()
+}
+
+function getPrevDateRange(range: string): { from: string; to: string } | null {
+  const days = getDaysForRange(range)
+  if (days === null) return null
+  const to = subDays(new Date(), days).toISOString()
+  const from = subDays(new Date(), days * 2).toISOString()
+  return { from, to }
 }
 
 const COMPLETED_STATUSES: TaskStatus[] = ['done', 'published']
@@ -68,12 +87,43 @@ export const analyticsRouter = createTRPCRouter({
           !COMPLETED_STATUSES.includes(t.status as TaskStatus)
       ).length
 
+      // Compute previous period trend data
+      const prevRange = getPrevDateRange(input.dateRange ?? '30d')
+      let prevTasksCompleted = 0
+      let prevOverdueTasks = 0
+      let prevActiveProjects = 0
+
+      if (prevRange) {
+        prevTasksCompleted = allTasks.filter(
+          (t) =>
+            COMPLETED_STATUSES.includes(t.status as TaskStatus) &&
+            t.updated_at >= prevRange.from &&
+            t.updated_at < prevRange.to
+        ).length
+
+        prevOverdueTasks = allTasks.filter(
+          (t) =>
+            t.due_date &&
+            t.due_date < prevRange.to &&
+            t.due_date >= prevRange.from &&
+            !COMPLETED_STATUSES.includes(t.status as TaskStatus)
+        ).length
+
+        // Previous active projects — approximate by counting projects created before range end
+        prevActiveProjects = (projects ?? []).filter(
+          (p) => p.status === 'active'
+        ).length
+      }
+
       return {
         totalBrands: totalBrands ?? 0,
         activeProjects,
         tasksCompleted,
         overdueTasks,
         totalTasks: allTasks.length,
+        prevTasksCompleted,
+        prevOverdueTasks,
+        prevActiveProjects,
       }
     }),
 
@@ -142,7 +192,7 @@ export const analyticsRouter = createTRPCRouter({
       const bucketFn =
         range === '7d'
           ? (d: string) => format(startOfDay(new Date(d)), 'MMM d')
-          : range === 'all'
+          : range === 'all' || range === 'year'
             ? (d: string) => format(startOfMonth(new Date(d)), 'MMM yyyy')
             : (d: string) => format(startOfWeek(new Date(d)), 'MMM d')
 
@@ -355,6 +405,156 @@ export const analyticsRouter = createTRPCRouter({
         count: stageCounts[key] ?? 0,
         color: config.color,
       }))
+    }),
+
+  drillDown: orgProcedure
+    .input(
+      z.object({
+        brandId: z.string().uuid().optional(),
+        status: z.string().optional(),
+        assigneeId: z.string().uuid().optional(),
+        projectId: z.string().uuid().optional(),
+        limit: z.number().min(1).max(50).optional().default(20),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const projectIds = input.projectId
+        ? [input.projectId]
+        : await getProjectIds(ctx, input.brandId)
+      if (projectIds.length === 0) return []
+
+      let query = ctx.supabase
+        .from('tasks')
+        .select('id, title, status, priority, due_date, assignee_id, project_id, projects(name)')
+        .in('project_id', projectIds)
+        .order('updated_at', { ascending: false })
+        .limit(input.limit)
+
+      if (input.status) query = query.eq('status', input.status)
+      if (input.assigneeId) query = query.eq('assignee_id', input.assigneeId)
+
+      const { data } = await query
+      return (data ?? []) as {
+        id: string
+        title: string
+        status: string
+        priority: number
+        due_date: string | null
+        assignee_id: string | null
+        project_id: string
+        projects: { name: string }
+      }[]
+    }),
+
+  compareOverview: orgProcedure
+    .input(
+      z.object({
+        brandId: z.string().uuid().optional(),
+        rangeA: z.enum(['7d', '30d', '90d', 'year', 'all']),
+        rangeB: z.enum(['7d', '30d', '90d', 'year', 'all']),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const projectIds = await getProjectIds(ctx, input.brandId)
+
+      if (projectIds.length === 0) {
+        const empty = { tasksCompleted: 0, tasksCreated: 0, overdueTasks: 0, totalTasks: 0 }
+        return { a: empty, b: empty }
+      }
+
+      const { data: tasks } = await ctx.supabase
+        .from('tasks')
+        .select('id, status, due_date, created_at, updated_at')
+        .in('project_id', projectIds)
+
+      const allTasks = tasks ?? []
+      const now = new Date().toISOString()
+
+      function computeMetrics(range: string) {
+        const dateFrom = getDateFrom(range)
+        const created = allTasks.filter((t) => !dateFrom || t.created_at >= dateFrom).length
+        const completed = allTasks.filter(
+          (t) => COMPLETED_STATUSES.includes(t.status as TaskStatus) && (!dateFrom || t.updated_at >= dateFrom)
+        ).length
+        const overdue = allTasks.filter(
+          (t) => t.due_date && t.due_date < now && !COMPLETED_STATUSES.includes(t.status as TaskStatus)
+        ).length
+        return { tasksCompleted: completed, tasksCreated: created, overdueTasks: overdue, totalTasks: allTasks.length }
+      }
+
+      return {
+        a: computeMetrics(input.rangeA),
+        b: computeMetrics(input.rangeB),
+      }
+    }),
+
+  insights: orgProcedure
+    .input(analyticsInput)
+    .query(async ({ ctx, input }) => {
+      const projectIds = await getProjectIds(ctx, input.brandId)
+
+      // Gather metrics
+      const dateFrom = getDateFrom(input.dateRange ?? '30d')
+      let tasks: { status: string; due_date: string | null; assignee_id: string | null; updated_at: string }[] = []
+      if (projectIds.length > 0) {
+        const { data } = await ctx.supabase
+          .from('tasks')
+          .select('status, due_date, assignee_id, updated_at')
+          .in('project_id', projectIds)
+        tasks = data ?? []
+      }
+
+      const now = new Date().toISOString()
+      const totalTasks = tasks.length
+      const completed = tasks.filter(
+        (t) => COMPLETED_STATUSES.includes(t.status as TaskStatus) && (!dateFrom || t.updated_at >= dateFrom)
+      ).length
+      const overdue = tasks.filter(
+        (t) => t.due_date && t.due_date < now && !COMPLETED_STATUSES.includes(t.status as TaskStatus)
+      ).length
+      const inProgress = tasks.filter((t) => t.status === 'in_progress').length
+      const inReview = tasks.filter((t) => t.status === 'in_review' || t.status === 'client_review').length
+      const blocked = tasks.filter((t) => t.status === 'blocked').length
+
+      // Team workload summary
+      const assigneeCounts: Record<string, number> = {}
+      for (const t of tasks) {
+        if (t.assignee_id) assigneeCounts[t.assignee_id] = (assigneeCounts[t.assignee_id] || 0) + 1
+      }
+      const teamSize = Object.keys(assigneeCounts).length
+      const avgTasksPerMember = teamSize > 0 ? Math.round(totalTasks / teamSize) : 0
+      const maxAssigned = teamSize > 0 ? Math.max(...Object.values(assigneeCounts)) : 0
+
+      if (totalTasks === 0) {
+        return { insights: [] }
+      }
+
+      const dateLabel = input.dateRange === '7d' ? 'last 7 days' : input.dateRange === '30d' ? 'last 30 days' : input.dateRange === '90d' ? 'last 90 days' : input.dateRange === 'year' ? 'last year' : 'all time'
+
+      const { text } = await generateText({
+        model: defaultModel,
+        system: `You are a digital agency analytics advisor. Given metrics, return exactly 3-5 brief, actionable insights as a JSON array of strings. Each insight should be one sentence, specific and data-driven. Focus on: task velocity, bottlenecks, team capacity, deadlines. Do NOT use markdown. Return ONLY a JSON array like: ["insight 1", "insight 2", "insight 3"]`,
+        prompt: `Agency metrics for ${dateLabel}:
+- Total tasks: ${totalTasks}
+- Completed in period: ${completed}
+- In progress: ${inProgress}
+- In review: ${inReview}
+- Blocked: ${blocked}
+- Overdue: ${overdue}
+- Team members with tasks: ${teamSize}
+- Avg tasks per member: ${avgTasksPerMember}
+- Max tasks on one member: ${maxAssigned}
+- Completion rate: ${totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0}%`,
+      })
+
+      try {
+        const insights = JSON.parse(text.trim()) as string[]
+        return { insights: insights.slice(0, 5) }
+      } catch {
+        // If parsing fails, split by newlines
+        const lines = text.split('\n').filter((l) => l.trim().length > 0).slice(0, 5)
+        return { insights: lines }
+      }
     }),
 })
 

@@ -15,10 +15,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { FileText, Globe, Layers } from 'lucide-react'
+import {
+  FileText,
+  Globe,
+  Layers,
+  Globe2,
+  Search,
+  PenTool,
+  Share2,
+  Target,
+  Mail,
+  Palette,
+  MousePointerClick,
+  BarChart3,
+  Lightbulb,
+} from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { toast } from 'sonner'
-import type { ProjectType } from '@/types/enums'
+import type { ProjectType, ServiceType } from '@/types/enums'
+import { SERVICE_TYPE_LABELS } from '@/types/enums'
+import { cn } from '@/lib/utils'
 
 export default function NewProjectPage() {
   const router = useRouter()
@@ -30,17 +46,38 @@ export default function NewProjectPage() {
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [selectedServices, setSelectedServices] = useState<Set<ServiceType>>(new Set())
 
   const { data: brands } = trpc.brand.list.useQuery()
+  const { data: serviceSummaries } = trpc.taskLibrary.getServiceSummaries.useQuery()
 
   const createMutation = trpc.project.create.useMutation({
     onSuccess: (data) => {
       utils.project.list.invalidate()
       toast.success('Project created')
-      router.push(`/projects/${data?.id}`)
+      // If services selected, redirect with setupTasks params
+      if (selectedServices.size > 0) {
+        const servicesParam = Array.from(selectedServices).join(',')
+        router.push(`/projects/${data?.id}?tab=tasks&setupTasks=true&services=${servicesParam}`)
+      } else {
+        router.push(`/projects/${data?.id}`)
+      }
     },
     onError: (err) => toast.error(err.message),
   })
+
+  const toggleService = (service: ServiceType) => {
+    setSelectedServices((prev) => {
+      const next = new Set(prev)
+      if (next.has(service)) next.delete(service)
+      else next.add(service)
+      return next
+    })
+  }
+
+  const summaryMap = new Map(
+    (serviceSummaries ?? []).map((s) => [s.serviceType, s])
+  )
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -166,6 +203,52 @@ export default function NewProjectPage() {
             </CardContent>
           </Card>
 
+          {/* Service Templates */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Templates</CardTitle>
+              <CardDescription>
+                Select services to pre-populate tasks from the template library. You can customize after creation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {SERVICE_TEMPLATE_CARDS.map(({ service, icon: Icon }) => {
+                  const summary = summaryMap.get(service)
+                  const isSelected = selectedServices.has(service)
+                  return (
+                    <button
+                      key={service}
+                      type="button"
+                      onClick={() => toggleService(service)}
+                      className={cn(
+                        'flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-colors text-center',
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <div>
+                        <p className="text-xs font-semibold">
+                          {SERVICE_TYPE_LABELS[service]}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {summary?.taskCount ?? 0} tasks
+                        </p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedServices.size > 0 && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  {selectedServices.size} service{selectedServices.size > 1 ? 's' : ''} selected — task selection drawer will open after creation
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex gap-3">
             <Button type="submit" disabled={createMutation.isPending || !brandId}>
               {createMutation.isPending ? 'Creating...' : 'Create Project'}
@@ -179,3 +262,16 @@ export default function NewProjectPage() {
     </>
   )
 }
+
+const SERVICE_TEMPLATE_CARDS: { service: ServiceType; icon: React.ComponentType<{ className?: string }> }[] = [
+  { service: 'website', icon: Globe2 },
+  { service: 'seo', icon: Search },
+  { service: 'content', icon: PenTool },
+  { service: 'social', icon: Share2 },
+  { service: 'paid_ads', icon: Target },
+  { service: 'email', icon: Mail },
+  { service: 'branding', icon: Palette },
+  { service: 'cro', icon: MousePointerClick },
+  { service: 'analytics', icon: BarChart3 },
+  { service: 'strategy', icon: Lightbulb },
+]

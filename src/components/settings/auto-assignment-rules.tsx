@@ -25,6 +25,10 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 
+import { Badge } from '@/components/ui/badge'
+import { SERVICE_TYPE_LABELS } from '@/types/enums'
+import { TASK_TYPE_LABELS } from '@/lib/constants'
+
 const PROJECT_TYPE_OPTIONS = [
   { value: '', label: 'Any' },
   { value: 'content_ops', label: 'Content Operations' },
@@ -44,19 +48,33 @@ const PLATFORM_OPTIONS = [
   { value: 'newsletter', label: 'Newsletter' },
 ]
 
+const SERVICE_TYPE_OPTIONS = [
+  { value: '', label: 'Any' },
+  ...Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+]
+
+const TASK_TYPE_OPTIONS = [
+  { value: '', label: 'Any' },
+  ...Object.entries(TASK_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+]
+
 export function AutoAssignmentRules() {
   const utils = trpc.useUtils()
 
   const { data: rules, isLoading } = trpc.automation.listRules.useQuery()
   const { data: members } = trpc.member.list.useQuery()
+  const { data: departments } = trpc.department.list.useQuery()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [name, setName] = useState('')
   const [projectType, setProjectType] = useState('')
   const [platform, setPlatform] = useState('')
-  const [actionType, setActionType] = useState<'assign_member' | 'round_robin'>('assign_member')
+  const [taskType, setTaskType] = useState('')
+  const [serviceType, setServiceType] = useState('')
+  const [actionType, setActionType] = useState<'assign_member' | 'round_robin' | 'assign_department' | 'set_priority'>('assign_member')
   const [selectedMemberId, setSelectedMemberId] = useState('')
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('')
   const [priority, setPriority] = useState(0)
 
   const toggleMutation = trpc.automation.toggleRule.useMutation({
@@ -88,9 +106,12 @@ export function AutoAssignmentRules() {
     setName('')
     setProjectType('')
     setPlatform('')
+    setTaskType('')
+    setServiceType('')
     setActionType('assign_member')
     setSelectedMemberId('')
     setSelectedMemberIds([])
+    setSelectedDepartmentId('')
     setPriority(0)
   }
 
@@ -103,9 +124,18 @@ export function AutoAssignmentRules() {
     const conditions: Record<string, string> = {}
     if (projectType) conditions.project_type = projectType
     if (platform) conditions.platform = platform
+    if (taskType) conditions.task_type = taskType
+    if (serviceType) conditions.service_type = serviceType
 
-    const action: { type: 'assign_member' | 'round_robin'; member_id?: string; member_ids?: string[] } = {
-      type: actionType,
+    const action: {
+      type: 'assign_member' | 'round_robin' | 'assign_department' | 'set_priority'
+      member_id?: string
+      member_ids?: string[]
+      department_id?: string
+      priority?: number
+      due_offset_days?: number
+    } = {
+      type: actionType as 'assign_member' | 'round_robin' | 'assign_department' | 'set_priority',
     }
 
     if (actionType === 'assign_member') {
@@ -114,12 +144,18 @@ export function AutoAssignmentRules() {
         return
       }
       action.member_id = selectedMemberId
-    } else {
+    } else if (actionType === 'round_robin') {
       if (selectedMemberIds.length < 2) {
         toast.error('Please select at least 2 members for round robin')
         return
       }
       action.member_ids = selectedMemberIds
+    } else if (actionType === 'assign_department') {
+      if (!selectedDepartmentId) {
+        toast.error('Please select a department')
+        return
+      }
+      action.department_id = selectedDepartmentId
     }
 
     createMutation.mutate({
@@ -150,11 +186,19 @@ export function AutoAssignmentRules() {
       const opt = PROJECT_TYPE_OPTIONS.find(
         (o) => o.value === conditions.project_type,
       )
-      parts.push(`Project type: ${opt?.label ?? conditions.project_type}`)
+      parts.push(`Project: ${opt?.label ?? conditions.project_type}`)
     }
     if (conditions.platform) {
       const opt = PLATFORM_OPTIONS.find((o) => o.value === conditions.platform)
       parts.push(`Platform: ${opt?.label ?? conditions.platform}`)
+    }
+    if (conditions.task_type) {
+      const label = TASK_TYPE_LABELS[conditions.task_type as string] ?? conditions.task_type
+      parts.push(`Type: ${label}`)
+    }
+    if (conditions.service_type) {
+      const label = SERVICE_TYPE_LABELS[conditions.service_type as keyof typeof SERVICE_TYPE_LABELS] ?? conditions.service_type
+      parts.push(`Service: ${label}`)
     }
     return parts.length > 0 ? parts.join(', ') : 'All tasks'
   }
@@ -163,6 +207,11 @@ export function AutoAssignmentRules() {
     if (action.type === 'round_robin') {
       const ids = (action.member_ids as string[]) ?? []
       return `Round robin (${ids.length} members)`
+    }
+    if (action.type === 'assign_department') {
+      const deptId = action.department_id as string | undefined
+      const dept = departments?.find((d: { id: string }) => d.id === deptId)
+      return `Assign to ${(dept as { name: string })?.name ?? 'department'}`
     }
     const memberId = action.member_id as string | undefined
     const member = members?.find((m) => m.user_id === memberId)
@@ -204,45 +253,86 @@ export function AutoAssignmentRules() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Project Type</Label>
-                    <Select value={projectType} onValueChange={setProjectType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROJECT_TYPE_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value || '__any'} value={opt.value || '__any'}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Conditions */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    IF conditions
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Project Type</Label>
+                      <Select value={projectType} onValueChange={setProjectType}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROJECT_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value || '__any'} value={opt.value || '__any'}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Platform</Label>
-                    <Select value={platform} onValueChange={setPlatform}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PLATFORM_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value || '__any'} value={opt.value || '__any'}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Platform</Label>
+                      <Select value={platform} onValueChange={setPlatform}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PLATFORM_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value || '__any'} value={opt.value || '__any'}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Task Type</Label>
+                      <Select value={taskType} onValueChange={setTaskType}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TASK_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value || '__any_tt'} value={opt.value || '__any_tt'}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Service Type</Label>
+                      <Select value={serviceType} onValueChange={setServiceType}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SERVICE_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value || '__any_st'} value={opt.value || '__any_st'}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
+                {/* Action */}
                 <div className="space-y-2">
-                  <Label>Action Type</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    THEN action
+                  </Label>
                   <Select
                     value={actionType}
-                    onValueChange={(v) => setActionType(v as 'assign_member' | 'round_robin')}
+                    onValueChange={(v) => setActionType(v as typeof actionType)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -250,11 +340,12 @@ export function AutoAssignmentRules() {
                     <SelectContent>
                       <SelectItem value="assign_member">Assign to member</SelectItem>
                       <SelectItem value="round_robin">Round robin</SelectItem>
+                      <SelectItem value="assign_department">Assign to department</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {actionType === 'assign_member' ? (
+                {actionType === 'assign_member' && (
                   <div className="space-y-2">
                     <Label>Assign To</Label>
                     <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
@@ -270,7 +361,9 @@ export function AutoAssignmentRules() {
                       </SelectContent>
                     </Select>
                   </div>
-                ) : (
+                )}
+
+                {actionType === 'round_robin' && (
                   <div className="space-y-2">
                     <Label>Round Robin Members</Label>
                     <div className="space-y-2 rounded-md border p-3 max-h-40 overflow-y-auto">
@@ -292,6 +385,27 @@ export function AutoAssignmentRules() {
                         </p>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {actionType === 'assign_department' && (
+                  <div className="space-y-2">
+                    <Label>Department</Label>
+                    <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments?.map((dept: { id: string; name: string }) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Task will be assigned to the department member with the fewest active tasks
+                    </p>
                   </div>
                 )}
 

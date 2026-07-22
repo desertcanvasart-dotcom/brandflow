@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, Save } from 'lucide-react'
+import { Plus, Trash2, Save, Sparkles, Copy, X } from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { toast } from 'sonner'
 import type { Database } from '@/types/database'
@@ -209,6 +209,9 @@ export function BrandGuidelines({ brand }: { brand: BrandRow }) {
         </CardContent>
       </Card>
 
+      {/* Saved AI Notes */}
+      <SavedAINotes brand={brand} />
+
       {/* Save */}
       {hasChanges && (
         <div className="flex justify-end">
@@ -219,5 +222,116 @@ export function BrandGuidelines({ brand }: { brand: BrandRow }) {
         </div>
       )}
     </div>
+  )
+}
+
+// --- Labels for AI agent types ---
+const AGENT_LABELS: Record<string, string> = {
+  ad_copy: 'Ad Copy',
+  seo_research: 'SEO Research',
+  cta_suggestions: 'CTA Suggestions',
+  competitor_analysis: 'Competitor Analysis',
+  performance_report: 'Performance Report',
+  content_draft: 'Content Draft',
+  meeting_summary: 'Meeting Summary',
+  brief: 'Brief',
+}
+
+interface SavedAIEntry {
+  text: string
+  source: string
+  savedAt: string
+}
+
+function SavedAINotes({ brand }: { brand: BrandRow }) {
+  const utils = trpc.useUtils()
+  const guidelines = (brand.guidelines as Record<string, unknown>) ?? {}
+
+  // Filter to only AI-saved entries (keys starting with "ai_")
+  const aiEntries = Object.entries(guidelines)
+    .filter(([key]) => key.startsWith('ai_'))
+    .map(([key, value]) => ({ key, ...(value as SavedAIEntry) }))
+    .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+
+  const removeMutation = trpc.brand.updateGuidelines.useMutation({
+    onSuccess: () => {
+      utils.brand.getById.invalidate({ id: brand.id })
+      toast.success('Note removed')
+    },
+    onError: (err) => toast.error(err.message),
+  })
+
+  function handleRemove(keyToRemove: string) {
+    const updated = { ...guidelines }
+    delete updated[keyToRemove]
+    removeMutation.mutate({ id: brand.id, guidelines: updated })
+  }
+
+  function handleCopy(text: string) {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard')
+  }
+
+  if (aiEntries.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-purple-500" />
+          Saved AI Notes
+          <span className="text-xs font-normal text-muted-foreground">
+            ({aiEntries.length})
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {aiEntries.map((entry) => (
+          <div
+            key={entry.key}
+            className="group rounded-lg border bg-muted/30 p-3 space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                  {AGENT_LABELS[entry.source] ?? entry.source}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(entry.savedAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleCopy(entry.text)}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={() => handleRemove(entry.key)}
+                  disabled={removeMutation.isPending}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {entry.text}
+            </p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }

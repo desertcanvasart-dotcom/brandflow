@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { trpc } from '@/trpc/client'
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '@/lib/constants'
 import { CheckCircle2, Clock, AlertCircle, Users, BarChart3 } from 'lucide-react'
+import { DecisionsPanel } from './decisions-panel'
 import type { Database } from '@/types/database'
 
 type TaskStatus = Database['public']['Enums']['task_status']
@@ -196,6 +197,9 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Decisions */}
+      <DecisionsPanel projectId={projectId} />
     </div>
   )
 }

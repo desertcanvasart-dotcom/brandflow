@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Calendar } from 'lucide-react'
+import { Plus, Calendar, Sparkles } from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
@@ -53,6 +53,11 @@ export function TaskListView({ projectId }: { projectId: string }) {
                       style={{ backgroundColor: TASK_STATUS_COLORS[task.status] }}
                     />
                     <span className="text-sm font-medium">{task.title}</span>
+                    {task.generation_reason && (
+                      <span title={task.generation_reason}>
+                        <Sparkles className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agency Beats - User Walkthrough</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.7;
+    color: #1a1a2e;
+    background: #ffffff;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: #0f0f23;
+    letter-spacing: -0.02em;
+  }
+  
+  h1 + p { color: #64748b; font-size: 1.1rem; margin-bottom: 32px; }
+  
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 48px 0 16px;
+    color: #0f0f23;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+    letter-spacing: -0.01em;
+  }
+  
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 28px 0 12px;
+    color: #1e293b;
+  }
+  
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 20px 0 8px;
+    color: #334155;
+  }
+  
+  p { margin: 8px 0; color: #374151; }
+  
+  a { color: #4f46e5; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  
+  strong { font-weight: 600; color: #1e293b; }
+  
+  hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 40px 0;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+  
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    white-space: nowrap;
+  }
+  
+  td {
+    padding: 9px 14px;
+    border: 1px solid #e2e8f0;
+    color: #374151;
+    vertical-align: top;
+  }
+  
+  tr:nth-child(even) td { background: #f8fafc; }
+  
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    color: #7c3aed;
+  }
+  
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 20px 24px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  
+  ol, ul {
+    margin: 8px 0;
+    padding-left: 24px;
+  }
+  
+  li {
+    margin: 4px 0;
+    color: #374151;
+  }
+  
+  @media print {
+    body { max-width: 100%; padding: 24px; font-size: 11pt; }
+    h2 { page-break-before: auto; }
+    table { font-size: 9pt; }
+    pre { font-size: 8pt; white-space: pre-wrap; }
+    h1 { font-size: 20pt; }
+    h2 { font-size: 15pt; }
+    h3 { font-size: 12pt; }
+    a { color: #1a1a2e; }
+  }
+  
+  @page { margin: 1.5cm; }
+</style>
+</head>
+<body>
+<h1>Agency Beats - User Walkthrough</h1>
+
+<p>A step-by-step catalog of every feature and user flow in the Agency Beats platform.</p>
+
+<hr>
+
+<h2>Table of Contents</h2>
+
+<ol><li><a href="#1-marketing-site--public-pages">Marketing Site & Public Pages</a></li>
+<li><a href="#2-authentication--onboarding">Authentication & Onboarding</a></li>
+<li><a href="#3-dashboard-home">Dashboard Home</a></li>
+<li><a href="#4-brand-management">Brand Management</a></li>
+<li><a href="#5-project-management">Project Management</a></li>
+<li><a href="#6-task-workflow--kanban-board">Task Workflow & Kanban Board</a></li>
+<li><a href="#7-content-calendar">Content Calendar</a></li>
+<li><a href="#8-gantt-timeline">Gantt Timeline</a></li>
+<li><a href="#9-publishing-queue">Publishing Queue</a></li>
+<li><a href="#10-meetings--video-conferencing">Meetings & Video Conferencing</a></li>
+<li><a href="#11-ai-agents">AI Agents</a></li>
+<li><a href="#12-analytics-dashboard">Analytics Dashboard</a></li>
+<li><a href="#13-notifications">Notifications</a></li>
+<li><a href="#14-team-management">Team Management</a></li>
+<li><a href="#15-settings--integrations">Settings & Integrations</a></li>
+<li><a href="#16-billing--subscription">Billing & Subscription</a></li>
+<li><a href="#17-client-portal">Client Portal</a></li>
+<li><a href="#18-user-roles--permissions">User Roles & Permissions</a></li>
+<p></ol></p>
+<hr>
+
+<h2>1. Marketing Site & Public Pages</h2>
+
+<p><strong>Route:</strong> <code>/</code></p>
+
+<p>The public-facing website introduces Agency Beats to prospective users.</p>
+
+<h3>Pages</h3>
+
+<table><thead><tr><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/</code></td><td>Homepage with hero, product preview, problem/solution, AI showcase, pricing, testimonials, CTA</td></tr><tr><td><code>/about</code></td><td>Company story timeline (Eye, Lightbulb, Build, Expand) and capabilities</td></tr><tr><td><code>/contact</code></td><td>Contact info (address, phone, email), support channels, contact form</td></tr><tr><td><code>/docs</code></td><td>Documentation hub: Getting Started, Brand Management, Content Ops, Web Projects, Meetings, Integrations, AI, Analytics</td></tr><tr><td><code>/docs/api</code></td><td>REST/tRPC API reference with endpoints and authentication</td></tr><tr><td><code>/guide/client-portal</code></td><td>Client portal setup guide: what it is, how to configure, feature walkthrough</td></tr><tr><td><code>/privacy</code></td><td>Privacy policy</td></tr><tr><td><code>/terms</code></td><td>Terms of service</td></tr><tr><td><code>/cookies</code></td><td>Cookie policy</td></tr></tbody></table>
+<h3>Homepage Sections (top to bottom)</h3>
+
+<ol><li><strong>Header</strong> - Logo, navigation links, Sign In / Get Started buttons</li>
+<li><strong>Hero</strong> - Headline, subtitle, primary CTA</li>
+<li><strong>Product Preview</strong> - Screenshot/demo of the platform</li>
+<li><strong>Problem Section</strong> - Pain points for agencies</li>
+<li><strong>Solution Section</strong> - How Agency Beats solves them</li>
+<li><strong>Workflow Section</strong> - Visual flow of the content/project lifecycle</li>
+<li><strong>AI Showcase</strong> - AI-powered features highlight</li>
+<li><strong>Analytics Preview</strong> - Dashboard and reporting capabilities</li>
+<li><strong>Portal Docs</strong> - Client portal feature overview</li>
+<li><strong>Integrations</strong> - Supported integrations (Figma, Slack, etc.)</li>
+<li><strong>Testimonials</strong> - Customer quotes</li>
+<li><strong>Pricing</strong> - Plan comparison (Starter, Pro, Agency)</li>
+<li><strong>CTA Section</strong> - Final call to action</li>
+<li><strong>Footer</strong> - Links, legal, social</li>
+<p></ol></p>
+<hr>
+
+<h2>2. Authentication & Onboarding</h2>
+
+<h3>2.1 Sign Up</h3>
+
+<p><strong>Route:</strong> <code>/signup</code></p>
+
+<p><strong>Steps:</strong></p>
+<ol><li>Enter display name (e.g., "Jane Doe")</li>
+<li>Enter organization name (e.g., "Acme Agency")</li>
+<li>Enter email address</li>
+<li>Set password (minimum 6 characters)</li>
+<li>Click <strong>Sign up</strong></li>
+<p></ol></p>
+<p><strong>What happens behind the scenes:</strong></p>
+<ul><li>A Supabase Auth user is created (auto-confirmed, no verification email)</li>
+<li>An organization record is created with a slug</li>
+<li>The user is added as the organization's <strong>admin</strong></li>
+<li>JWT claims are set with <code>organization_id</code> and <code>user_role</code></li>
+<li>User is automatically signed in and redirected to <code>/projects</code></li>
+<p></ul></p>
+<h3>2.2 Sign In</h3>
+
+<p><strong>Route:</strong> <code>/login</code></p>
+
+<p><strong>Option A - Email/Password:</strong></p>
+<ol><li>Enter email and password</li>
+<li>Click <strong>Sign in</strong></li>
+<li>Redirected to <code>/dashboard</code> (or the page they originally requested)</li>
+<p></ol></p>
+<p><strong>Option B - Google OAuth:</strong></p>
+<ol><li>Click <strong>Continue with Google</strong></li>
+<li>Complete Google consent screen</li>
+<li>Redirected back via <code>/auth/callback</code></li>
+<li>Landed on <code>/dashboard</code></li>
+<p></ol></p>
+<p><strong>Redirect behavior:</strong> If a user tries to access a protected page while logged out, they are sent to <code>/login?redirect=/original-page</code> and returned there after login.</p>
+
+<h3>2.3 Team Invitation</h3>
+
+<p><strong>Route:</strong> <code>/invite/[token]</code></p>
+
+<p><strong>Admin side (sending the invite):</strong></p>
+<ol><li>Go to Team page</li>
+<li>Click <strong>+ New Member</strong></li>
+<li>Enter email, select role, optionally set department and job title</li>
+<li>Click <strong>Send Invite</strong></li>
+<li>An email is sent with a unique invite link</li>
+<p></ol></p>
+<p><strong>Invitee side (accepting):</strong></p>
+<ol><li>Click the link in the invitation email</li>
+<li>If not logged in, redirected to <code>/login</code> first</li>
+<li>Invite page validates the token and shows organization details</li>
+<li>Click <strong>Accept Invitation</strong></li>
+<li>User is added to the organization with the assigned role</li>
+<li>JWT claims are updated</li>
+<li>Redirected to <code>/projects</code></li>
+<p></ol></p>
+<hr>
+
+<h2>3. Dashboard Home</h2>
+
+<p><strong>Route:</strong> <code>/dashboard</code></p>
+
+<p>The central hub providing a real-time overview of agency activity.</p>
+
+<h3>What You See</h3>
+
+<table><thead><tr><th>Section</th><th>Content</th></tr></thead><tbody><tr><td><strong>Digital Clock</strong></td><td>Live current time and full date display</td></tr><tr><td><strong>Stats Grid</strong> (4 cards)</td><td>Total projects, Total team members, Total tasks, Overdue tasks (highlighted red if any)</td></tr><tr><td><strong>Task Breakdown</strong></td><td>Completed count, In-progress count, Overdue count</td></tr><tr><td><strong>Recent Tasks</strong></td><td>Last 6 tasks with name, status badge, and due date</td></tr><tr><td><strong>Upcoming Meetings</strong></td><td>Next meetings with time and attendees</td></tr><tr><td><strong>Activity Feed</strong></td><td>Chronological log of team actions (task updates, comments, status changes)</td></tr></tbody></table>
+<h3>Actions Available</h3>
+<ul><li>Click any stat card to navigate to the relevant page</li>
+<li>Click a task to open it</li>
+<li>Click a meeting to join or view details</li>
+<p></ul></p>
+<hr>
+
+<h2>4. Brand Management</h2>
+
+<h3>4.1 Brands List</h3>
+
+<p><strong>Route:</strong> <code>/brands</code></p>
+
+<p><strong>What you see:</strong> A responsive grid of brand cards (3 columns on desktop).</p>
+
+<p><strong>Each card shows:</strong></p>
+<ul><li>Brand logo (or initial letter fallback)</li>
+<li>Brand name</li>
+<li>Description (2-line clamp)</li>
+<li>Platform badges (Instagram, Twitter, TikTok, LinkedIn, etc.)</li>
+<li>Website URL indicator</li>
+<p></ul></p>
+<p><strong>Actions:</strong></p>
+<ul><li><strong>Search</strong> - Type to filter brands by name (300ms debounce)</li>
+<li><strong>+ New Brand</strong> - Navigate to brand creation form</li>
+<li><strong>Click card</strong> - Open brand detail page</li>
+<p></ul></p>
+<h3>4.2 Create Brand</h3>
+
+<p><strong>Route:</strong> <code>/brands/new</code></p>
+
+<p><strong>Form fields:</strong></p>
+<ol><li>Brand name</li>
+<li>Description</li>
+<li>Logo upload</li>
+<li>Active platforms (multi-select: Instagram, Facebook, Twitter, LinkedIn, TikTok, YouTube, Blog, Newsletter)</li>
+<li>Website URL</li>
+<li>Brand guidelines (tone, colors, fonts)</li>
+<li>Click <strong>Create Brand</strong></li>
+<p></ol></p>
+<h3>4.3 Brand Detail</h3>
+
+<p><strong>Route:</strong> <code>/brands/[id]</code></p>
+
+<p><strong>Header:</strong> Brand logo, name, and description with an <strong>Edit</strong> button.</p>
+
+<p><strong>5 Tabs:</strong></p>
+
+<table><thead><tr><th>Tab</th><th>Contents</th></tr></thead><tbody><tr><td><strong>Overview</strong></td><td>General brand information, key metrics</td></tr><tr><td><strong>Contacts</strong></td><td>Brand point-of-contact list, add/edit contacts</td></tr><tr><td><strong>Guidelines</strong></td><td>Brand style guide: tone of voice, color palette, typography, do's and don'ts</td></tr><tr><td><strong>Assets</strong></td><td>Logo files, images, templates, fonts - upload and manage</td></tr><tr><td><strong>Client Access</strong></td><td>Control which external users can access this brand via the client portal</td></tr></tbody></table>
+<h3>4.4 Edit Brand</h3>
+
+<p><strong>Route:</strong> <code>/brands/[id]/edit</code></p>
+
+<p>Same form as creation, pre-populated with current brand data.</p>
+
+<hr>
+
+<h2>5. Project Management</h2>
+
+<h3>5.1 Projects List</h3>
+
+<p><strong>Route:</strong> <code>/projects</code></p>
+
+<p><strong>What you see:</strong> Grid of project cards.</p>
+
+<p><strong>Each card shows:</strong></p>
+<ul><li>Project name</li>
+<li>Brand association (logo)</li>
+<li>Project type badge (Content Ops / Web Build / Full Service)</li>
+<li>Status badge (Draft, Active, Paused, Completed, Archived)</li>
+<li>End date</li>
+<p></ul></p>
+<p><strong>Filters & Actions:</strong></p>
+<ul><li><strong>Search</strong> - Filter by project name</li>
+<li><strong>Type filter</strong> - Content Ops, Web Build, Full Service</li>
+<li><strong>Status filter</strong> - Draft, Active, Paused, Completed, Archived</li>
+<li><strong>+ New Project</strong> - Open creation form</li>
+<li><strong>Click card</strong> - Open project detail</li>
+<p></ul></p>
+<h3>5.2 Create Project</h3>
+
+<p><strong>Route:</strong> <code>/projects/new</code></p>
+
+<p><strong>Form fields:</strong></p>
+<ol><li><strong>Project name</strong> - Text input</li>
+<li><strong>Project type</strong> - Visual card selector:</li>
+<p></ol>   - <strong>Content Ops</strong> - Social media & recurring content management</p>
+<p>   - <strong>Web Build</strong> - Website design & development projects</p>
+<p>   - <strong>Full Service</strong> - Combined content + web projects</p>
+<ol><li><strong>Brand</strong> - Dropdown selector</li>
+<li><strong>Description</strong> - Text area</li>
+<li><strong>Start date</strong> and <strong>End date</strong> - Date pickers</li>
+<li>Click <strong>Create Project</strong></li>
+<p></ol></p>
+<h3>5.3 Project Detail</h3>
+
+<p><strong>Route:</strong> <code>/projects/[id]</code></p>
+
+<p><strong>Header:</strong> Project name, brand logo, type badge, settings button.</p>
+
+<p><strong>Tabs</strong> (vary by project type):</p>
+
+<table><thead><tr><th>Tab</th><th>Shown For</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Overview</strong></td><td>All</td><td>Project summary, key dates, description</td></tr><tr><td><strong>Board</strong></td><td>Content Ops, Full Service</td><td>Kanban board with task cards (drag-and-drop columns)</td></tr><tr><td><strong>Phases</strong></td><td>Web Build, Full Service</td><td>Phase tracker with milestone progression</td></tr><tr><td><strong>List</strong></td><td>All</td><td>Flat task list with sorting and bulk actions</td></tr><tr><td><strong>Meetings</strong></td><td>All</td><td>Project-specific meetings list</td></tr><tr><td><strong>Team</strong></td><td>All</td><td>Assigned team members and their roles</td></tr></tbody></table>
+<hr>
+
+<h2>6. Task Workflow & Kanban Board</h2>
+
+<h3>Task Statuses (Pipeline)</h3>
+
+<p>Tasks flow through these statuses:</p>
+
+<pre><code>Backlog → To Do → In Progress → In Review → Client Review → Approved → Scheduled → Published → Done
+<p>                                                                                         ↕</p>
+<p>                                                                                      Blocked</code></pre></p>
+
+<h3>Kanban Board (Content Ops)</h3>
+
+<p><strong>Columns:</strong> Each status is a column. Tasks are cards that can be dragged between columns.</p>
+
+<p><strong>Task Card shows:</strong></p>
+<ul><li>Task title</li>
+<li>Assignee avatar</li>
+<li>Due date</li>
+<li>Priority indicator</li>
+<li>Platform badge (for content items)</li>
+<p></ul></p>
+<p><strong>Task actions:</strong></p>
+<ul><li>Click to open task detail</li>
+<li>Drag to change status</li>
+<li>Assign/reassign team members</li>
+<li>Set due dates</li>
+<li>Add comments (with @mentions)</li>
+<li>Attach files</li>
+<li>Link to deliverables</li>
+<p></ul></p>
+<h3>Phase Tracker (Web Projects)</h3>
+
+<p>Web projects use a phased approach:</p>
+
+<pre><code>Discovery → Wireframing → Client Review (Structure) → Design → Client Review (Design) → Content Creation → Development → Testing → Client Review (Staging) → Launch → Post-Launch → Complete</code></pre>
+
+<p>Each phase shows:</p>
+<ul><li>Phase name and description</li>
+<li>Milestone marker</li>
+<li>Completion status (Not Started / In Progress / Completed / Skipped)</li>
+<li>Associated tasks within the phase</li>
+<p></ul></p>
+<hr>
+
+<h2>7. Content Calendar</h2>
+
+<p><strong>Route:</strong> <code>/calendar</code></p>
+
+<p>A monthly calendar view for content planning and scheduling.</p>
+
+<h3>What You See</h3>
+<ul><li><strong>Month/Year header</strong> with Previous/Next navigation and Today button</li>
+<li><strong>Calendar grid</strong> with day cells</li>
+<li><strong>Content items</strong> and <strong>tasks</strong> displayed on their scheduled dates</li>
+<li>Color-coded by status</li>
+<p></ul></p>
+<h3>Actions</h3>
+<ul><li><strong>Brand filter</strong> - Show all brands or filter to a specific one</li>
+<li><strong>Navigate months</strong> - Previous / Next buttons, or jump to Today</li>
+<li><strong>Click item</strong> - Open task detail</li>
+<p></ul></p>
+<hr>
+
+<h2>8. Gantt Timeline</h2>
+
+<p><strong>Route:</strong> <code>/timeline</code></p>
+
+<p>A visual timeline of all tasks across projects using Frappe Gantt.</p>
+
+<h3>What You See</h3>
+<ul><li>Horizontal Gantt bars representing task durations</li>
+<li><strong>Today marker</strong> (blue vertical line)</li>
+<li>Status-colored bars:</li>
+<p></ul>  - Blue = In Progress</p>
+<p>  - Orange = In Review</p>
+<p>  - Purple = Client Review</p>
+<p>  - Green = Done</p>
+<p>  - Red = Blocked</p>
+<p>  - Gray = Other</p>
+
+<h3>Controls</h3>
+<ul><li><strong>Project filter</strong> - All Projects or a specific one</li>
+<li><strong>View mode</strong> - Day / Week / Month granularity toggle</li>
+<li><strong>Status legend</strong> at top</li>
+<p></ul></p>
+<hr>
+
+<h2>9. Publishing Queue</h2>
+
+<p><strong>Route:</strong> <code>/queue</code></p>
+
+<p>Manages the pipeline of approved content ready for publishing.</p>
+
+<h3>What You See</h3>
+<ul><li>Table with columns: Platform, Status, Content preview, Scheduled date</li>
+<li>Status badges (Approved, Scheduled, Published)</li>
+<li>Total item count</li>
+<p></ul></p>
+<h3>Filters</h3>
+<ul><li><strong>Brand</strong> - Filter by brand</li>
+<li><strong>Platform</strong> - Filter by social platform</li>
+<li><strong>Status</strong> - Approved / Scheduled / Published</li>
+<p></ul></p>
+<h3>Actions Per Item</h3>
+<table><thead><tr><th>Button</th><th>Action</th></tr></thead><tbody><tr><td><strong>Schedule</strong></td><td>Opens dialog to set publish date/time</td></tr><tr><td><strong>Mark Published</strong></td><td>Manually marks content as published</td></tr><tr><td><strong>Unschedule</strong></td><td>Removes scheduled date</td></tr><tr><td><strong>External Link</strong></td><td>Opens published content URL</td></tr></tbody></table>
+<hr>
+
+<h2>10. Meetings & Video Conferencing</h2>
+
+<h3>10.1 Meetings List</h3>
+
+<p><strong>Route:</strong> <code>/meetings</code></p>
+
+<p><strong>What you see:</strong></p>
+<ul><li><strong>Upcoming meetings</strong> highlighted in blue cards with date, time, and video icon</li>
+<li><strong>All meetings</strong> listed as cards below</li>
+<li>Each card shows: title, type badge, status badge, duration, participant count</li>
+<p></ul></p>
+<p><strong>Filters:</strong></p>
+<ul><li><strong>Search</strong> - Filter by meeting title</li>
+<li><strong>Status</strong> - All / Scheduled / In Progress / Completed / Cancelled</li>
+<li><strong>Type</strong> - Client call, Internal sync, Project kickoff, etc.</li>
+<p></ul></p>
+<p><strong>Actions:</strong></p>
+<ul><li><strong>Schedule Meeting</strong> - Opens dialog: title, type, date, time, duration, project, brand, description</li>
+<li><strong>Click card</strong> - Navigate to meeting detail</li>
+<p></ul></p>
+<h3>10.2 Meeting Room</h3>
+
+<p><strong>Route:</strong> <code>/meetings/[meetingId]</code></p>
+
+<p><strong>Header:</strong> Meeting title, status badge, type badge, date, time, duration, description.</p>
+
+<p><strong>4 Tabs:</strong></p>
+
+<table><thead><tr><th>Tab</th><th>Features</th></tr></thead><tbody><tr><td><strong>Details</strong></td><td>Meeting Type, Status, Duration info cards</td></tr><tr><td><strong>Transcript</strong></td><td>Full real-time transcript powered by Deepgram</td></tr><tr><td><strong>AI</strong></td><td>Meeting Summarizer (generates summary) + Brief Generator (creates action items)</td></tr><tr><td><strong>Participants</strong></td><td>Participant list with avatars, Add Participant button</td></tr></tbody></table>
+<p><strong>Key Actions:</strong></p>
+<ul><li><strong>Join Meeting</strong> - Enters full-screen video room (LiveKit)</li>
+<li><strong>Leave Meeting</strong> - Exits video, returns to detail view</li>
+<li><strong>Edit</strong> - Opens edit dialog (title, type, date, time, duration)</li>
+<li><strong>Invite</strong> - Opens invite participant dialog</li>
+<li><strong>Generate Summary</strong> - AI creates meeting summary from transcript</li>
+<li><strong>Generate Brief</strong> - AI creates structured action items/brief</li>
+<p></ul></p>
+<h3>Video Room Features</h3>
+<ul><li>Real-time video/audio via LiveKit</li>
+<li>Screen sharing</li>
+<li>Participant grid</li>
+<li>Mute/unmute controls</li>
+<li>Camera on/off</li>
+<li>Live transcription sidebar (Deepgram)</li>
+<p></ul></p>
+<hr>
+
+<h2>11. AI Agents</h2>
+
+<p><strong>Route:</strong> <code>/ai</code></p>
+
+<p>A hub of 5 AI-powered marketing intelligence tools.</p>
+
+<h3>Available Agents</h3>
+
+<table><thead><tr><th>Tab</th><th>Icon</th><th>What It Does</th></tr></thead><tbody><tr><td><strong>Ad Copy</strong></td><td>Megaphone</td><td>Generates ad copy variations for campaigns. Input: product/service, target audience, platform, tone. Output: multiple copy options with headlines and body text.</td></tr><tr><td><strong>SEO Research</strong></td><td>Search</td><td>Performs keyword research and SEO strategy. Input: topic/keyword, competitor URLs. Output: keyword suggestions, search volume estimates, content recommendations.</td></tr><tr><td><strong>Performance</strong></td><td>Bar Chart</td><td>Generates performance analysis reports. Input: metrics data, time period. Output: trend analysis, insights, recommendations.</td></tr><tr><td><strong>Competitor</strong></td><td>Target</td><td>Analyzes competitor marketing strategies. Input: competitor brand/URL. Output: positioning analysis, channel breakdown, strengths/weaknesses.</td></tr><tr><td><strong>Strategy</strong></td><td>Lightbulb</td><td>Creates marketing strategy recommendations. Input: brand goals, audience, budget. Output: channel mix, content themes, timeline suggestions.</td></tr></tbody></table>
+<p>Each agent uses the Anthropic Claude API via Vercel AI SDK with streaming responses.</p>
+
+<hr>
+
+<h2>12. Analytics Dashboard</h2>
+
+<p><strong>Route:</strong> <code>/analytics</code></p>
+
+<p>Comprehensive performance metrics for the agency.</p>
+
+<h3>Filters</h3>
+<ul><li><strong>Brand</strong> - All brands or specific brand</li>
+<li><strong>Date Range</strong> - Last 7 days / Last 30 days / Last 90 days / All time</li>
+<p></ul></p>
+<h3>Dashboard Sections</h3>
+
+<table><thead><tr><th>Section</th><th>Metrics</th></tr></thead><tbody><tr><td><strong>Overview Stats</strong></td><td>Total brands, Active projects, Tasks completed, Overdue tasks, Total tasks</td></tr><tr><td><strong>Task Charts</strong></td><td>Status distribution pie/bar chart, Tasks over time trend line</td></tr><tr><td><strong>Project Progress</strong></td><td>Per-project completion percentage bars</td></tr><tr><td><strong>Team Workload</strong></td><td>Per-member task distribution</td></tr><tr><td><strong>Content by Platform</strong></td><td>Breakdown of content across Instagram, Twitter, LinkedIn, etc.</td></tr><tr><td><strong>Content Pipeline</strong></td><td>Content items by workflow stage (Draft → In Review → Approved → Published)</td></tr></tbody></table>
+<p>All charts are built with Recharts.</p>
+
+<hr>
+
+<h2>13. Notifications</h2>
+
+<h3>13.1 Notification Bell</h3>
+
+<p><strong>Location:</strong> Top bar header (visible on every dashboard page)</p>
+
+<ul><li>Bell icon with unread count badge</li>
+<li>Click to open popover with recent notifications</li>
+<li>Grouped view for compact display</li>
+<li>"View All" link to full notifications page</li>
+<p></ul></p>
+<h3>13.2 Notifications Page</h3>
+
+<p><strong>Route:</strong> <code>/notifications</code></p>
+
+<p><strong>Header:</strong> Bell icon, "Notifications" title, unread count message, <strong>Mark all as read</strong> button.</p>
+
+<p><strong>Search & Filter Bar:</strong></p>
+<ul><li><strong>Search input</strong> - Full-text search across notification titles and bodies (debounced)</li>
+<li><strong>Filter popover</strong> - Checkboxes for each event type:</li>
+<p></ul>  - Task Assigned</p>
+<p>  - Task Status Changed</p>
+<p>  - Comment Added</p>
+<p>  - Due Date Approaching</p>
+<p>  - Content Scheduled</p>
+<p>  - Content Published</p>
+<p>  - Meeting Starting</p>
+<ul><li>Active filter count badge</li>
+<p></ul></p>
+<p><strong>3 Tabs:</strong></p>
+
+<table><thead><tr><th>Tab</th><th>Shows</th></tr></thead><tbody><tr><td><strong>All</strong></td><td>Every notification</td></tr><tr><td><strong>Unread</strong></td><td>Only unread (with red count badge)</td></tr><tr><td><strong>Archived</strong></td><td>Manually or auto-archived notifications</td></tr></tbody></table>
+<p><strong>Each Notification Shows:</strong></p>
+<ul><li>Icon colored by type</li>
+<li>Title (bold if unread)</li>
+<li>Body text preview</li>
+<li>Relative timestamp ("2 hours ago")</li>
+<li>Group badge if grouped ("3 comments on Task X")</li>
+<li>Action buttons (if applicable): Approve / Reject / Complete / Acknowledge</li>
+<li>Archive / Unarchive button</li>
+<li>Delete button</li>
+<li>Click to navigate to related resource</li>
+<p></ul></p>
+<p><strong>Infinite scroll</strong> with "Load more" pagination.</p>
+
+<h3>13.3 Notification Channels</h3>
+
+<p>Notifications are delivered across 5 channels (configurable per event type in Settings):</p>
+
+<table><thead><tr><th>Channel</th><th>Delivery</th></tr></thead><tbody><tr><td><strong>In-App</strong></td><td>Real-time via Supabase Realtime, shown in bell + notifications page</td></tr><tr><td><strong>Email</strong></td><td>Individual emails via Resend, or batched in daily/weekly digest</td></tr><tr><td><strong>Web Push</strong></td><td>Native browser notifications (requires user permission)</td></tr><tr><td><strong>Slack</strong></td><td>Block Kit messages to configured Slack channel</td></tr><tr><td><strong>Webhook</strong></td><td>HMAC-signed HTTP POST to custom endpoint</td></tr></tbody></table>
+<h3>13.4 Event Types</h3>
+
+<table><thead><tr><th>Event</th><th>When It Fires</th></tr></thead><tbody><tr><td>Task Assigned</td><td>A task is assigned to you</td></tr><tr><td>Task Status Changed</td><td>A task you're involved with changes status</td></tr><tr><td>Comment Added</td><td>Someone comments on a task you're on</td></tr><tr><td>Due Date Approaching</td><td>A task due date is within 24 hours (cron-driven)</td></tr><tr><td>Content Scheduled</td><td>Content is scheduled for publishing</td></tr><tr><td>Content Published</td><td>Content goes live on a platform</td></tr><tr><td>Meeting Starting</td><td>A meeting you're invited to is about to begin</td></tr></tbody></table>
+<hr>
+
+<h2>14. Team Management</h2>
+
+<p><strong>Route:</strong> <code>/team</code></p>
+
+<h3>What You See</h3>
+<ul><li><strong>Member count</strong> header</li>
+<li><strong>Grid of member cards</strong>, each showing:</li>
+<p></ul>  - Name and email</p>
+<p>  - Role badge (color-coded)</p>
+<p>  - Department tag</p>
+<p>  - Job title</p>
+<ul><li><strong>Department filter</strong> dropdown</li>
+<p></ul></p>
+<h3>Actions</h3>
+
+<p><strong>Invite a new member:</strong></p>
+<ol><li>Click <strong>+ New Member</strong></li>
+<li>Enter email address</li>
+<li>Select role (Admin, Manager, Creator, Developer, Viewer)</li>
+<li>Optionally select department</li>
+<li>Optionally set job title</li>
+<li>Click <strong>Send Invite</strong></li>
+<li>Invitation email is sent with a unique link</li>
+<p></ol></p>
+<p><strong>Manage departments:</strong></p>
+<ol><li>Click <strong>Department Manager</strong></li>
+<li>Create new departments with custom colors</li>
+<li>Edit existing department names/colors</li>
+<li>Delete unused departments</li>
+<p></ol></p>
+<p><strong>Edit a member:</strong></p>
+<ul><li>Click the dropdown menu on a member card</li>
+<li><strong>Edit</strong> - Change role, department, job title</li>
+<li><strong>Remove</strong> - Remove from organization</li>
+<p></ul></p>
+<h3>Role Badges</h3>
+
+<table><thead><tr><th>Role</th><th>Color</th></tr></thead><tbody><tr><td>Admin</td><td>Red</td></tr><tr><td>Manager</td><td>Purple</td></tr><tr><td>Creator</td><td>Blue</td></tr><tr><td>Developer</td><td>Green</td></tr><tr><td>Viewer</td><td>Gray</td></tr></tbody></table>
+<hr>
+
+<h2>15. Settings & Integrations</h2>
+
+<p><strong>Route:</strong> <code>/settings</code></p>
+
+<h3>15.1 Organization Settings (Admin only)</h3>
+
+<table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Organization name</strong></td><td>Editable text input</td></tr><tr><td><strong>Organization ID</strong></td><td>Read-only, monospace (for API integrations)</td></tr><tr><td><strong>Save Changes</strong></td><td>Saves updated org name</td></tr></tbody></table>
+<h3>15.2 Account Information</h3>
+
+<table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Your role</strong></td><td>Read-only display of current role (e.g., "Admin")</td></tr></tbody></table>
+<h3>15.3 Figma Integration</h3>
+
+<ul><li><strong>Connect to Figma</strong> button</li>
+<li>OAuth flow to link Figma account</li>
+<li>Once connected, Figma file changes trigger webhooks</li>
+<p></ul></p>
+<h3>15.4 Slack Integration (Admin only)</h3>
+
+<ol><li>Enter Slack <strong>Webhook URL</strong> (from Slack workspace settings > Incoming Webhooks)</li>
+<li>Toggle <strong>Active</strong> on/off</li>
+<li>Click <strong>Save</strong></li>
+<li>Click <strong>Test Connection</strong> to send a test message to the channel</li>
+<li>Click trash icon to remove the integration</li>
+<p></ol></p>
+<h3>15.5 Webhook Integration (Admin only)</h3>
+
+<ol><li>Enter <strong>Endpoint URL</strong> for your custom webhook receiver</li>
+<li>Click refresh icon to <strong>Generate Signing Secret</strong></li>
+<li>Copy the secret (use to verify <code>X-AgencyBeats-Signature</code> header)</li>
+<li>Select <strong>Subscribed Events</strong> (checkboxes for each event type, empty = all)</li>
+<li>Toggle <strong>Active</strong> on/off</li>
+<li>Click <strong>Save</strong></li>
+<p></ol></p>
+<h3>15.6 Notification Preferences (All users)</h3>
+
+<p>A grid showing all 7 event types as rows and 5 channels as columns:</p>
+
+<pre><code>In-App  Email  Push  Slack  Webhook
+<p>Task Assigned         ✓       ✓     ✓     ✓      ✓</p>
+<p>Task Status Changed   ✓       ✓     ✓     ✓      ✓</p>
+<p>Comment Added         ✓       ✓     ✓     ✓      ✓</p>
+<p>Due Date Approaching  ✓       ✓     ✓     ✓      ✓</p>
+<p>Content Scheduled     ✓       ✓     ✓     ✓      ✓</p>
+<p>Content Published     ✓       ✓     ✓     ✓      ✓</p>
+<p>Meeting Starting      ✓       ✓     ✓     ✓      ✓</code></pre></p>
+
+<p>Each cell is a toggle switch. Below the grid:</p>
+
+<ul><li><strong>Email Digest</strong> selector: None (individual emails) / Daily / Weekly</li>
+<p></ul></p>
+<h3>15.7 Quiet Hours (All users)</h3>
+
+<table><thead><tr><th>Setting</th><th>Options</th></tr></thead><tbody><tr><td><strong>Enable</strong></td><td>Toggle on/off</td></tr><tr><td><strong>Start Time</strong></td><td>Time picker (e.g., 22:00)</td></tr><tr><td><strong>End Time</strong></td><td>Time picker (e.g., 08:00)</td></tr><tr><td><strong>Timezone</strong></td><td>Dropdown with common timezones</td></tr></tbody></table>
+<p>When enabled, non-in-app notifications are queued during quiet hours and delivered when the window ends.</p>
+
+<h3>15.8 Auto-Assignment Rules (Manager+ only)</h3>
+
+<p>Configure rules for automatically assigning tasks based on criteria like team member skills, workload, or department.</p>
+
+<hr>
+
+<h2>16. Billing & Subscription</h2>
+
+<p><strong>Route:</strong> <code>/billing</code></p>
+
+<h3>What You See</h3>
+
+<table><thead><tr><th>Section</th><th>Content</th></tr></thead><tbody><tr><td><strong>Current Plan</strong></td><td>Plan name, feature list, usage limits</td></tr><tr><td><strong>Subscription Status</strong></td><td>Color-coded badge: Active (green), Trialing (blue), Past Due (yellow), Canceled (red)</td></tr><tr><td><strong>Usage Metrics</strong></td><td>Progress bars showing consumption (e.g., "3/5 brands used")</td></tr><tr><td><strong>Plan Comparison</strong></td><td>Side-by-side: Starter, Pro, Agency plans with pricing</td></tr><tr><td><strong>Next Billing</strong></td><td>Date and amount</td></tr></tbody></table>
+<h3>Actions</h3>
+
+<table><thead><tr><th>Action</th><th>Who</th><th>Description</th></tr></thead><tbody><tr><td><strong>Upgrade Plan</strong></td><td>Admin</td><td>Initiates Stripe Checkout for plan upgrade</td></tr><tr><td><strong>Manage Billing</strong></td><td>Admin</td><td>Opens Stripe Customer Portal (update payment method, view invoices, cancel)</td></tr></tbody></table>
+<h3>Plan Tiers</h3>
+
+<table><thead><tr><th>Feature</th><th>Starter</th><th>Pro</th><th>Agency</th></tr></thead><tbody><tr><td>Brands</td><td>5</td><td>25</td><td>Unlimited</td></tr><tr><td>Team Members</td><td>5</td><td>25</td><td>Unlimited</td></tr><tr><td>Projects</td><td>10</td><td>50</td><td>Unlimited</td></tr><tr><td>AI Credits</td><td>Limited</td><td>Standard</td><td>Unlimited</td></tr><tr><td>Integrations</td><td>Basic</td><td>Full</td><td>Full + API</td></tr></tbody></table>
+<p>After Stripe checkout, the app handles <code>?success=true</code> and <code>?canceled=true</code> URL params for user feedback.</p>
+
+<hr>
+
+<h2>17. Client Portal</h2>
+
+<p>A stripped-down, client-facing view of project content and milestones.</p>
+
+<h3>17.1 Portal Home</h3>
+
+<p><strong>Route:</strong> <code>/portal</code></p>
+
+<p><strong>What clients see:</strong></p>
+<ul><li>Grid of brand cards they have access to</li>
+<li>Each card shows brand logo (or initials), name, description</li>
+<li>Click a brand card to enter the brand portal</li>
+<p></ul></p>
+<h3>17.2 Brand Portal</h3>
+
+<p><strong>Route:</strong> <code>/portal/[brandId]</code></p>
+
+<p><strong>Header:</strong> Brand name and description.</p>
+
+<p><strong>2 Tabs:</strong></p>
+
+<table><thead><tr><th>Tab</th><th>Content</th></tr></thead><tbody><tr><td><strong>Content Review</strong></td><td>Queue of content items awaiting client approval. Clients can review drafts, leave comments, approve or request revisions.</td></tr><tr><td><strong>Project Milestones</strong></td><td>Visual timeline of project phases with completion status. Shows which phases are complete, in progress, or upcoming.</td></tr></tbody></table>
+<h3>Client Capabilities</h3>
+<ul><li>View content drafts with rich media</li>
+<li>Add review comments</li>
+<li>Approve or request changes</li>
+<li>Track project phase progress</li>
+<li>View scheduled and published content</li>
+<li>See upcoming milestones and deadlines</li>
+<p></ul></p>
+<h3>What Clients Cannot Do</h3>
+<ul><li>Access the main dashboard</li>
+<li>Create or manage projects</li>
+<li>Manage team members</li>
+<li>View billing information</li>
+<li>Access AI tools</li>
+<li>Modify brand settings</li>
+<p></ul></p>
+<hr>
+
+<h2>18. User Roles & Permissions</h2>
+
+<h3>Role Hierarchy</h3>
+
+<pre><code>Admin &gt; Manager &gt; Creator / Developer &gt; Viewer &gt; Client</code></pre>
+
+<h3>Permission Matrix</h3>
+
+<table><thead><tr><th>Capability</th><th>Admin</th><th>Manager</th><th>Creator</th><th>Developer</th><th>Viewer</th><th>Client</th></tr></thead><tbody><tr><td>View dashboard</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td></tr><tr><td>Create/edit projects</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td><td>-</td></tr><tr><td>Manage brands</td><td>✓</td><td>✓</td><td>✓</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Create/edit tasks</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td><td>-</td></tr><tr><td>Comment on tasks</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Schedule meetings</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td><td>-</td></tr><tr><td>Use AI agents</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td><td>-</td></tr><tr><td>View analytics</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td></tr><tr><td>Manage team</td><td>✓</td><td>✓</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Edit org settings</td><td>✓</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Manage integrations (Slack, Webhooks)</td><td>✓</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Manage billing</td><td>✓</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Auto-assignment rules</td><td>✓</td><td>✓</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Access client portal</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>✓</td></tr><tr><td>Approve content (portal)</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>✓</td></tr><tr><td>Notification preferences</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td></tr><tr><td>Quiet hours</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>-</td></tr></tbody></table>
+<hr>
+
+<h2>Sidebar Navigation</h2>
+
+<p>All authenticated dashboard users see the same 12-item sidebar:</p>
+
+<table><thead><tr><th>#</th><th>Item</th><th>Icon</th><th>Route</th></tr></thead><tbody><tr><td>1</td><td>Dashboard</td><td>Grid</td><td><code>/dashboard</code></td></tr><tr><td>2</td><td>Projects</td><td>Folder</td><td><code>/projects</code></td></tr><tr><td>3</td><td>Brands</td><td>Palette</td><td><code>/brands</code></td></tr><tr><td>4</td><td>Calendar</td><td>Calendar</td><td><code>/calendar</code></td></tr><tr><td>5</td><td>Queue</td><td>List</td><td><code>/queue</code></td></tr><tr><td>6</td><td>Meetings</td><td>Video</td><td><code>/meetings</code></td></tr><tr><td>7</td><td>Timeline</td><td>Gantt</td><td><code>/timeline</code></td></tr><tr><td>8</td><td>Analytics</td><td>Bar Chart</td><td><code>/analytics</code></td></tr><tr><td>9</td><td>AI Agents</td><td>Bot</td><td><code>/ai</code></td></tr><tr><td>10</td><td>Team</td><td>Users</td><td><code>/team</code></td></tr><tr><td>11</td><td>Billing</td><td>Credit Card</td><td><code>/billing</code></td></tr><tr><td>12</td><td>Settings</td><td>Gear</td><td><code>/settings</code></td></tr></tbody></table>
+<p><strong>Sidebar header:</strong> Agency Beats logo + branding (links to <code>/dashboard</code>)</p>
+<p><strong>Sidebar footer:</strong> User dropdown with Sign Out and Settings links</p>
+
+<hr>
+
+<h2>Application Summary</h2>
+
+<h3>By the Numbers</h3>
+
+<table><thead><tr><th>Metric</th><th>Count</th></tr></thead><tbody><tr><td>Dashboard pages</td><td>21</td></tr><tr><td>Marketing pages</td><td>9</td></tr><tr><td>Portal pages</td><td>2</td></tr><tr><td>Auth pages</td><td>3</td></tr><tr><td>API routes</td><td>19</td></tr><tr><td><strong>Total routes</strong></td><td><strong>54</strong></td></tr><tr><td>Sidebar items</td><td>12</td></tr><tr><td>Notification channels</td><td>5</td></tr><tr><td>Notification event types</td><td>7</td></tr><tr><td>AI agents</td><td>5</td></tr><tr><td>User roles</td><td>6</td></tr><tr><td>Task statuses</td><td>10</td></tr><tr><td>Project types</td><td>3</td></tr><tr><td>Web project phases</td><td>12</td></tr></tbody></table>
+<h3>Tech Stack</h3>
+
+<table><thead><tr><th>Layer</th><th>Technology</th></tr></thead><tbody><tr><td>Frontend</td><td>Next.js 15, TypeScript, TailwindCSS, Shadcn UI</td></tr><tr><td>API</td><td>tRPC (type-safe)</td></tr><tr><td>Database</td><td>Supabase (PostgreSQL + RLS + Realtime)</td></tr><tr><td>Auth</td><td>Supabase Auth (email/password + Google OAuth)</td></tr><tr><td>Video</td><td>LiveKit (self-hosted)</td></tr><tr><td>Transcription</td><td>Deepgram</td></tr><tr><td>AI</td><td>Anthropic Claude + Vercel AI SDK</td></tr><tr><td>Email</td><td>Resend</td></tr><tr><td>Push</td><td>Web Push (VAPID)</td></tr><tr><td>Charts</td><td>Recharts</td></tr><tr><td>Gantt</td><td>Frappe Gantt</td></tr><tr><td>Editor</td><td>Tiptap (rich text)</td></tr><tr><td>Storage</td><td>Cloudflare R2</td></tr><tr><td>Payments</td><td>Stripe</td></tr><tr><td>Integrations</td><td>Figma, Slack, Custom Webhooks</td></tr></tbody></table>
+</body>
+</html>
