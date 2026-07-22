@@ -43,3 +43,18 @@ GRANT EXECUTE ON FUNCTION public.custom_access_token_hook TO supabase_auth_admin
 REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook FROM anon;
 REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook FROM authenticated;
+
+-- The hook executes as supabase_auth_admin (SECURITY INVOKER), which has no
+-- default access to public tables. Without these grants every token issuance
+-- fails with "Error running hook URI" on a fresh project.
+GRANT USAGE ON SCHEMA public TO supabase_auth_admin;
+GRANT SELECT ON public.organization_members TO supabase_auth_admin;
+
+-- organization_members has RLS enabled; give the auth role a read policy so
+-- the membership lookup above returns rows.
+DROP POLICY IF EXISTS "auth_admin_read_members" ON public.organization_members;
+CREATE POLICY "auth_admin_read_members"
+  ON public.organization_members
+  FOR SELECT
+  TO supabase_auth_admin
+  USING (TRUE);
