@@ -6,7 +6,7 @@ export const searchRouter = createTRPCRouter({
   semantic: orgProcedure
     .input(z.object({
       query: z.string().min(1),
-      sourceType: z.enum(['brand_guidelines', 'meeting_transcript', 'content_item', 'brief', 'comment']).optional(),
+      sourceType: z.enum(['brand_guidelines', 'meeting_transcript', 'content_item', 'brief', 'comment', 'document']).optional(),
       limit: z.number().min(1).max(20).optional(),
     }))
     .query(async ({ ctx, input }) => {

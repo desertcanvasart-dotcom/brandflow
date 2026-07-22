@@ -20,12 +20,18 @@ export const organizationRouter = createTRPCRouter({
       name: z.string().min(2).optional(),
       logoUrl: z.string().optional(),
       settings: z.record(z.string(), z.unknown()).optional(),
+      defaultTaskDurationHours: z.number().min(0.5).max(24).optional(),
+      workingDays: z.array(z.string()).optional(),
+      timezone: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const updates: Record<string, unknown> = {}
       if (input.name) updates.name = input.name
       if (input.logoUrl !== undefined) updates.logo_url = input.logoUrl
       if (input.settings) updates.settings = input.settings
+      if (input.defaultTaskDurationHours !== undefined) updates.default_task_duration_hours = input.defaultTaskDurationHours
+      if (input.workingDays) updates.working_days = input.workingDays
+      if (input.timezone) updates.timezone = input.timezone
 
       const { data, error } = await ctx.supabase
         .from('organizations')

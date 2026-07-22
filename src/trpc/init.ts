@@ -12,6 +12,7 @@ export const createTRPCContext = cache(async () => {
     user,
     orgId: user?.app_metadata?.organization_id as string | undefined,
     userRole: user?.app_metadata?.user_role as string | undefined,
+    isSuperAdmin: user?.app_metadata?.is_super_admin === true,
   }
 })
 
@@ -82,6 +83,26 @@ export const adminProcedure = baseProcedure.use(async ({ ctx, next }) => {
   }
   return next({
     ctx: { ...ctx, user: ctx.user, orgId: ctx.orgId, userRole: ctx.userRole },
+  })
+})
+
+// Middleware: require super admin (platform-level, no org required)
+export const superAdminProcedure = baseProcedure.use(async ({ ctx, next }) => {
+  if (!ctx.user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' })
+  }
+  if (!ctx.isSuperAdmin) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Requires super admin access',
+    })
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user,
+      isSuperAdmin: true as const,
+    },
   })
 })
 

@@ -10,12 +10,18 @@ const conditionsSchema = z.object({
   platform: z.string().optional(),
   tags: z.array(z.string()).optional(),
   match_all: z.boolean().optional(),
+  task_type: z.string().optional(),
+  service_type: z.string().optional(),
+  task_phase: z.string().optional(),
 })
 
 const actionSchema = z.object({
-  type: z.enum(['assign_member', 'round_robin']),
+  type: z.enum(['assign_member', 'round_robin', 'assign_department', 'set_priority']),
   member_id: z.string().uuid().optional(),
   member_ids: z.array(z.string().uuid()).optional(),
+  department_id: z.string().uuid().optional(),
+  priority: z.number().optional(),
+  due_offset_days: z.number().optional(),
 })
 
 export const automationRouter = createTRPCRouter({

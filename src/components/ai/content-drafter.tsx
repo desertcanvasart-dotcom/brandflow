@@ -33,6 +33,7 @@ export function ContentDrafter({
 
   const { completion, isLoading, complete } = useCompletion({
     api: '/api/ai/draft-content',
+    streamProtocol: 'text',
     body: { platform, brandGuidelines, brandVoice },
     onFinish: (_: string, completion: string) => {
       onDraftGenerated?.(completion)

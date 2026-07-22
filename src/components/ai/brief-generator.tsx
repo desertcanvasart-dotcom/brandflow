@@ -32,6 +32,7 @@ export function BriefGenerator({
 
   const { completion, isLoading, complete } = useCompletion({
     api: '/api/ai/generate-brief',
+    streamProtocol: 'text',
     body: { projectType, brandGuidelines, briefType },
     onFinish: (_: string, completion: string) => {
       onBriefGenerated?.(completion)

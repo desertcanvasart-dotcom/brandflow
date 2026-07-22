@@ -1,12 +1,12 @@
 'use client'
 
-import { use } from 'react'
-import { notFound } from 'next/navigation'
+import { Suspense, use, useState, useEffect } from 'react'
+import { notFound, useSearchParams } from 'next/navigation'
 import { TopBar } from '@/components/layout/top-bar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Settings, Video } from 'lucide-react'
+import { Settings, Video, ClipboardList, LayoutList, Mail, DoorOpen, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { trpc } from '@/trpc/client'
 import { PROJECT_TYPE_LABELS, MEETING_TYPE_LABELS, MEETING_STATUS_LABELS } from '@/lib/constants'
@@ -15,15 +15,46 @@ import { PhaseTracker } from '@/components/phases/phase-tracker'
 import { TaskListView } from '@/components/tasks/task-list-view'
 import { ProjectOverview } from '@/components/projects/project-overview'
 import { ProjectTeam } from '@/components/projects/project-team'
+import { IntakeTab } from '@/components/intake/intake-tab'
+import { ProjectHealthBadge } from '@/components/projects/project-health-badge'
+import { ProjectTaskBoard } from '@/components/tasks/project-task-board'
+import { TaskSelectionDrawer } from '@/components/tasks/task-selection-drawer'
+import { ProjectEmailTab } from '@/components/email/project-email-tab'
+import { ChatPanel } from '@/components/chat/chat-panel'
+import { UnreadBadge } from '@/components/chat/unread-badge'
 import type { MeetingType, MeetingStatus } from '@/types/enums'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" /></div>}>
+      <ProjectDetailContent params={params} />
+    </Suspense>
+  )
+}
+
+function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const searchParams = useSearchParams()
   const { data: project, isLoading } = trpc.project.getById.useQuery({ id })
   const { data: projectMeetings } = trpc.meeting.list.useQuery(
     { projectId: id },
     { enabled: !!id }
   )
+
+  // Task drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerServiceType, setDrawerServiceType] = useState<string | undefined>()
+
+  // Auto-open drawer from URL params (e.g. after project creation)
+  useEffect(() => {
+    if (searchParams.get('setupTasks') === 'true') {
+      const services = searchParams.get('services')
+      if (services) setDrawerServiceType(services.split(',')[0])
+      setDrawerOpen(true)
+    }
+  }, [searchParams])
+
+  const defaultTab = searchParams.get('tab') ?? 'overview'
 
   if (isLoading) {
     return (
@@ -68,20 +99,33 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <Badge variant="outline">
                   {PROJECT_TYPE_LABELS[project.type]}
                 </Badge>
+                <ProjectHealthBadge projectId={id} />
               </div>
               <p className="text-sm text-muted-foreground">{project.brands?.name}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href={`/projects/${id}/room`}>
+              <Button variant="outline" size="sm">
+                <DoorOpen className="mr-2 h-4 w-4" />
+                Room
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Button>
+          </div>
         </div>
 
         {/* Content based on project type */}
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="tasks">
+              <LayoutList className="mr-2 h-4 w-4" />
+              Tasks
+            </TabsTrigger>
             {showBoard && <TabsTrigger value="board">Board</TabsTrigger>}
             {showPhases && <TabsTrigger value="phases">Phases</TabsTrigger>}
             <TabsTrigger value="list">List</TabsTrigger>
@@ -89,11 +133,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <Video className="mr-2 h-4 w-4" />
               Meetings
             </TabsTrigger>
+            <TabsTrigger value="intake">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Intake & Briefs
+            </TabsTrigger>
+            <TabsTrigger value="emails">
+              <Mail className="mr-2 h-4 w-4" />
+              Emails
+            </TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1">
+              <MessageCircle className="h-4 w-4" />
+              Chat
+              <UnreadBadge projectId={id} />
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
             <ProjectOverview projectId={project.id} />
+          </TabsContent>
+
+          <TabsContent value="tasks" className="mt-6">
+            <ProjectTaskBoard
+              projectId={project.id}
+              onOpenDrawer={(serviceType) => {
+                setDrawerServiceType(serviceType)
+                setDrawerOpen(true)
+              }}
+            />
           </TabsContent>
 
           {showBoard && (
@@ -158,10 +225,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             )}
           </TabsContent>
 
+          <TabsContent value="intake" className="mt-6">
+            <IntakeTab projectId={project.id} meetings={projectMeetings ?? []} />
+          </TabsContent>
+
+          <TabsContent value="emails" className="mt-6">
+            <ProjectEmailTab projectId={project.id} brandId={project.brand_id} />
+          </TabsContent>
+
           <TabsContent value="team" className="mt-6">
             <ProjectTeam projectId={project.id} />
           </TabsContent>
+
+          <TabsContent value="chat" className="mt-6">
+            <ChatPanel projectId={project.id} />
+          </TabsContent>
         </Tabs>
+
+        {/* Task Selection Drawer */}
+        <TaskSelectionDrawer
+          projectId={id}
+          serviceType={drawerServiceType}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+        />
       </div>
     </>
   )

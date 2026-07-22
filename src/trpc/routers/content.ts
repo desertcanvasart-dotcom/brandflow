@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server'
 import { createTRPCRouter, orgProcedure } from '../init'
 import { logActivity } from '@/lib/activity/log'
 import { createNotification } from '@/lib/notifications/create'
+import { triggerEmbedding, triggerEmbeddingDeletion } from '@/lib/ai/embedding-triggers'
 import type { Database } from '@/types/database'
 
 type ContentItemRow = Database['public']['Tables']['content_items']['Row']
@@ -106,12 +107,21 @@ export const contentRouter = createTRPCRouter({
         .single<ContentItemRow>()
 
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+
+      // Embed content body for RAG
+      if (input.body && data) {
+        triggerEmbedding(ctx.orgId, 'content_item', data.id, input.body)
+      }
+
       return data
     }),
 
   delete: orgProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // Clean up embeddings before deleting
+      triggerEmbeddingDeletion('content_item', input.id)
+
       const { error } = await ctx.supabase
         .from('content_items')
         .delete()
@@ -134,7 +144,53 @@ export const contentRouter = createTRPCRouter({
       return data ?? []
     }),
 
-  // ── Scheduling procedures ──
+  // ── Pipeline & scheduling procedures ──
+
+  listPipeline: orgProcedure
+    .input(z.object({
+      brandId: z.string().uuid().optional(),
+      platform: platformEnum.optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      type PipelineItem = ContentItemRow & {
+        tasks: {
+          id: string
+          title: string
+          status: string
+          assignee_id: string | null
+          due_date: string | null
+          projects: {
+            organization_id: string
+            brand_id: string
+            name: string
+            brands: { name: string; logo_url: string | null }
+          }
+        }
+      }
+
+      const pipelineStatuses = ['in_review', 'client_review', 'approved', 'scheduled', 'published']
+
+      const { data } = await ctx.supabase
+        .from('content_items')
+        .select('*, tasks!inner(id, title, status, assignee_id, due_date, projects!inner(organization_id, brand_id, name, brands(name, logo_url)))')
+        .order('created_at', { ascending: true })
+        .returns<PipelineItem[]>()
+
+      let filtered = (data ?? []).filter(
+        (item) =>
+          item.tasks.projects.organization_id === ctx.orgId &&
+          pipelineStatuses.includes(item.tasks.status)
+      )
+
+      if (input?.brandId) {
+        filtered = filtered.filter((item) => item.tasks.projects.brand_id === input.brandId)
+      }
+      if (input?.platform) {
+        filtered = filtered.filter((item) => item.platform === input.platform)
+      }
+
+      return filtered
+    }),
 
   listQueue: orgProcedure
     .input(z.object({

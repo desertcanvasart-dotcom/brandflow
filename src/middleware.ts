@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-const publicPaths = ['/login', '/signup', '/auth/callback', '/invite']
+const publicPaths = ['/login', '/signup', '/auth/callback', '/invite', '/docs', '/contact', '/about', '/privacy', '/terms', '/cookies', '/guide', '/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -10,6 +10,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/webhooks') ||
     pathname.startsWith('/api/auth/figma') ||
+    pathname.startsWith('/api/auth/google-calendar') ||
+    pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/api/notifications/track') ||
+    pathname.startsWith('/api/meet') ||
+    pathname.startsWith('/meet') ||
     pathname.includes('.')
   ) {
     return NextResponse.next()
@@ -18,8 +23,21 @@ export async function middleware(request: NextRequest) {
   const { user, supabaseResponse } = await updateSession(request)
 
   // Allow public paths
-  if (publicPaths.some(p => pathname.startsWith(p))) {
+  const isPublic = publicPaths.some(p => p === '/' ? pathname === '/' : pathname.startsWith(p))
+  if (isPublic) {
     if (user && (pathname === '/login' || pathname === '/signup')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return supabaseResponse
+  }
+
+  // Super admin paths: require auth + super admin flag
+  if (pathname.startsWith('/super-admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login?redirect=' + pathname, request.url))
+    }
+    const isSuperAdmin = user.app_metadata?.is_super_admin === true
+    if (!isSuperAdmin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return supabaseResponse

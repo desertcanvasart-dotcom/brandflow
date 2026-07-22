@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
+import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        <ImpersonationBanner />
         <DashboardShell>
           {children}
         </DashboardShell>

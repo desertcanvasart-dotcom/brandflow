@@ -31,5 +31,7 @@ export function useCurrentUser() {
     loading,
     role: user?.app_metadata?.user_role as UserRole | undefined,
     orgId: user?.app_metadata?.organization_id as string | undefined,
+    isSuperAdmin: user?.app_metadata?.is_super_admin === true,
+    isImpersonating: user?.app_metadata?.impersonating_org === true,
   }
 }

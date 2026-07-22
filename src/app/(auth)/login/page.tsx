@@ -50,7 +50,7 @@ function LoginForm() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">BrandFlow</CardTitle>
+        <CardTitle className="text-2xl font-bold">Agency Beats</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,7 +112,7 @@ export default function LoginPage() {
     <Suspense fallback={
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">BrandFlow</CardTitle>
+          <CardTitle className="text-2xl font-bold">Agency Beats</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>

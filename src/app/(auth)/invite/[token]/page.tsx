@@ -39,7 +39,7 @@ export default function InvitePage() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">You&apos;ve been invited</CardTitle>
-        <CardDescription>Accept this invitation to join the organization on BrandFlow</CardDescription>
+        <CardDescription>Accept this invitation to join the organization on Agency Beats</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (

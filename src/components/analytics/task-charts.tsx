@@ -6,6 +6,9 @@ import {
   AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import { PieChartIcon, TrendingUp } from 'lucide-react'
+import { TASK_STATUS_LABELS } from '@/lib/constants'
+import type { TaskStatus } from '@/types/enums'
 
 interface StatusData {
   status: string
@@ -34,7 +37,12 @@ function ChartTooltip({ active, payload, label }: any) {
   )
 }
 
-export function TaskStatusChart({ data }: { data: StatusData[] }) {
+interface TaskStatusChartProps {
+  data: StatusData[]
+  onDrillDown?: (filter: { status: string; label: string }) => void
+}
+
+export function TaskStatusChart({ data, onDrillDown }: TaskStatusChartProps) {
   const total = data.reduce((sum, d) => sum + d.count, 0)
 
   if (data.length === 0) {
@@ -44,12 +52,25 @@ export function TaskStatusChart({ data }: { data: StatusData[] }) {
           <CardTitle className="text-sm font-medium">Task Status Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[300px] items-center justify-center">
-            <p className="text-sm text-muted-foreground">No task data</p>
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center">
+            <PieChartIcon className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              No tasks found for this period.
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Try expanding the date range or creating tasks in your projects.
+            </p>
           </div>
         </CardContent>
       </Card>
     )
+  }
+
+  const handleClick = (entry: any) => {
+    if (entry?.status && onDrillDown) {
+      const label = TASK_STATUS_LABELS[entry.status as TaskStatus] ?? entry.status
+      onDrillDown({ status: entry.status, label: `${label} Tasks` })
+    }
   }
 
   return (
@@ -68,6 +89,8 @@ export function TaskStatusChart({ data }: { data: StatusData[] }) {
               outerRadius={90}
               dataKey="count"
               nameKey="label"
+              onClick={handleClick}
+              className="cursor-pointer"
             >
               {data.map((entry) => (
                 <Cell key={entry.status} fill={entry.color} />
@@ -94,8 +117,14 @@ export function TasksOverTimeChart({ data }: { data: TimeData[] }) {
           <CardTitle className="text-sm font-medium">Tasks Over Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[300px] items-center justify-center">
-            <p className="text-sm text-muted-foreground">No task data</p>
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center">
+            <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              No task activity in this period.
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Select a wider date range to see trends.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+html {
+  scroll-behavior: smooth;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -124,3 +128,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Marketing page animations */
+@keyframes marketing-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes marketing-slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes marketing-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes marketing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-marketing-fade-in { animation: marketing-fade-in 0.6s ease-out forwards; }
+.animate-marketing-slide-up { animation: marketing-slide-up 0.8s ease-out forwards; }
+.animate-marketing-scale-in { animation: marketing-scale-in 0.5s ease-out forwards; }
+.animate-marketing-float { animation: marketing-float 3s ease-in-out infinite; }

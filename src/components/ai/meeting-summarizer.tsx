@@ -23,6 +23,7 @@ export function MeetingSummarizer({
 
   const { completion, isLoading, complete } = useCompletion({
     api: '/api/ai/summarize',
+    streamProtocol: 'text',
     body: { meetingId, meetingType, projectType, brandName },
     onError: (err: Error) => toast.error(err.message || 'Failed to generate summary'),
   })

@@ -22,10 +22,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link href="/portal" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
-              B
-            </div>
-            <span className="font-semibold">BrandFlow</span>
+            <img src="/logo.png" alt="Agency Beats" className="h-9 w-auto rounded" />
+            <span className="font-semibold">Agency Beats</span>
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               Client Portal
             </span>

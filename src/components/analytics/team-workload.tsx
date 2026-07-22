@@ -5,6 +5,7 @@ import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import { Users } from 'lucide-react'
 
 interface TeamData {
   userId: string
@@ -13,6 +14,11 @@ interface TeamData {
   completed: number
   inProgress: number
   overdue: number
+}
+
+interface TeamWorkloadChartProps {
+  data: TeamData[]
+  onDrillDown?: (filter: { assigneeId: string; label: string }) => void
 }
 
 function TeamTooltip({ active, payload, label }: any) {
@@ -29,7 +35,7 @@ function TeamTooltip({ active, payload, label }: any) {
   )
 }
 
-export function TeamWorkloadChart({ data }: { data: TeamData[] }) {
+export function TeamWorkloadChart({ data, onDrillDown }: TeamWorkloadChartProps) {
   if (data.length === 0) {
     return (
       <Card>
@@ -37,8 +43,14 @@ export function TeamWorkloadChart({ data }: { data: TeamData[] }) {
           <CardTitle className="text-sm font-medium">Team Workload</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[300px] items-center justify-center">
-            <p className="text-sm text-muted-foreground">No team data</p>
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center">
+            <Users className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              No task assignments found.
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Assign tasks to team members to see workload distribution.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -49,6 +61,12 @@ export function TeamWorkloadChart({ data }: { data: TeamData[] }) {
     ...d,
     name: d.displayName.length > 12 ? d.displayName.slice(0, 12) + '...' : d.displayName,
   }))
+
+  const handleClick = (entry: any) => {
+    if (entry?.userId && onDrillDown) {
+      onDrillDown({ assigneeId: entry.userId, label: `${entry.displayName}'s Tasks` })
+    }
+  }
 
   return (
     <Card>
@@ -63,9 +81,9 @@ export function TeamWorkloadChart({ data }: { data: TeamData[] }) {
             <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
             <Tooltip content={<TeamTooltip />} />
             <Legend formatter={(value: string) => <span className="text-xs">{value}</span>} />
-            <Bar dataKey="inProgress" name="In Progress" fill="#3B82F6" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="completed" name="Completed" fill="#22C55E" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="overdue" name="Overdue" fill="#EF4444" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="inProgress" name="In Progress" fill="#3B82F6" radius={[2, 2, 0, 0]} onClick={handleClick} className="cursor-pointer" />
+            <Bar dataKey="completed" name="Completed" fill="#22C55E" radius={[2, 2, 0, 0]} onClick={handleClick} className="cursor-pointer" />
+            <Bar dataKey="overdue" name="Overdue" fill="#EF4444" radius={[2, 2, 0, 0]} onClick={handleClick} className="cursor-pointer" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Calendar } from 'lucide-react'
+import { Calendar, Sparkles } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
@@ -60,9 +60,21 @@ export function KanbanCard({ task, members, onClick, isOverlay }: KanbanCardProp
         ${!isDragging && !isOverlay ? 'hover:shadow-md hover:border-primary/30' : ''}
       `}
     >
-      <p className="text-sm font-medium leading-snug text-foreground">
-        {task.title}
-      </p>
+      <div className="flex items-start gap-1.5">
+        <p className="text-sm font-medium leading-snug text-foreground">
+          {task.title}
+        </p>
+        {task.generation_reason && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Sparkles className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-xs">{task.generation_reason}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
       {(task.priority > 0 || (task.tags && task.tags.length > 0)) && (
         <div className="mt-2 flex items-center gap-1.5 flex-wrap">

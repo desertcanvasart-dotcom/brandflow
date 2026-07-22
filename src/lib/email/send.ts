@@ -1,11 +1,12 @@
 import { resend } from './client'
 
-const FROM_EMAIL = process.env.EMAIL_FROM ?? 'BrandFlow <noreply@brandflow.app>'
+const FROM_EMAIL = process.env.EMAIL_FROM ?? 'Agency Beats <noreply@agencybeats.app>'
 
 export async function sendEmail(params: {
   to: string
   subject: string
   html: string
+  attachments?: Array<{ filename: string; content: Buffer | string }>
 }): Promise<void> {
   try {
     await resend.emails.send({
@@ -13,6 +14,7 @@ export async function sendEmail(params: {
       to: params.to,
       subject: params.subject,
       html: params.html,
+      attachments: params.attachments as any,
     })
   } catch (error) {
     console.error('[email] Failed to send:', error)

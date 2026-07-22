@@ -8,7 +8,7 @@ interface FigmaEmbedProps {
 }
 
 export function FigmaEmbed({ figmaUrl, className }: FigmaEmbedProps) {
-  const embedSrc = `https://www.figma.com/embed?embed_host=brandflow&url=${encodeURIComponent(figmaUrl)}`
+  const embedSrc = `https://www.figma.com/embed?embed_host=agencybeats&url=${encodeURIComponent(figmaUrl)}`
 
   return (
     <div className={className}>

@@ -69,11 +69,26 @@ export const authRouter = createTRPCRouter({
         })
       }
 
+      // Check if this is the first user on the platform (auto-promote to super admin)
+      const { count: totalMembers } = await supabaseAdmin
+        .from('organization_members')
+        .select('*', { count: 'exact', head: true })
+
+      const isFirstUser = (totalMembers ?? 0) <= 1
+
+      if (isFirstUser) {
+        await supabaseAdmin.from('platform_admins').insert({
+          user_id: user.id,
+          notes: 'Auto-promoted: first user on platform',
+        })
+      }
+
       // Set app_metadata so JWT contains org info
       await supabaseAdmin.auth.admin.updateUserById(user.id, {
         app_metadata: {
           organization_id: org.id,
           user_role: 'admin',
+          ...(isFirstUser && { is_super_admin: true }),
         },
       })
 

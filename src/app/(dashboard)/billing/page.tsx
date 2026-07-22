@@ -1,60 +1,45 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { TopBar } from '@/components/layout/top-bar'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import {
-  CreditCard,
-  Users,
-  Palette,
-  ExternalLink,
-  Check,
-  Sparkles,
-  AlertCircle,
-} from 'lucide-react'
+import { AlertCircle, CreditCard } from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { PLAN_CONFIGS } from '@/lib/constants'
 import type { SubscriptionPlan } from '@/types/enums'
 import { toast } from 'sonner'
-
-const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  trialing: 'bg-blue-100 text-blue-700',
-  past_due: 'bg-amber-100 text-amber-700',
-  canceled: 'bg-gray-100 text-gray-700',
-  incomplete: 'bg-red-100 text-red-700',
-  unpaid: 'bg-red-100 text-red-700',
-  paused: 'bg-gray-100 text-gray-700',
-}
+import { BillingStatsBar } from '@/components/billing/billing-stats-bar'
+import { BillingPlanCard } from '@/components/billing/billing-plan-card'
+import { BillingUsage } from '@/components/billing/billing-usage'
+import { BillingHistory } from '@/components/billing/billing-history'
+import { BillingPaymentMethod } from '@/components/billing/billing-payment-method'
 
 const PLAN_ORDER: SubscriptionPlan[] = ['starter', 'pro', 'agency']
 
-function formatPrice(cents: number): string {
-  return `$${(cents / 100).toFixed(0)}`
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" /></div>}>
+      <BillingContent />
+    </Suspense>
+  )
 }
 
-export default function BillingPage() {
+function BillingContent() {
   const { role } = useCurrentUser()
   const isAdmin = role === 'admin'
   const searchParams = useSearchParams()
 
+  // Core queries
   const { data: subscription, isLoading: subLoading } =
     trpc.billing.getSubscription.useQuery()
   const { data: usage, isLoading: usageLoading } =
     trpc.billing.getUsage.useQuery()
 
+  // Mutations
   const checkoutMutation = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: (data) => {
       if (data.url) window.location.href = data.url
@@ -83,276 +68,111 @@ export default function BillingPage() {
   const isActive =
     subscription?.status === 'active' || subscription?.status === 'trialing'
 
+  // Compute trial days remaining
+  const trialDaysRemaining =
+    subscription?.status === 'trialing' && subscription.current_period_end
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(subscription.current_period_end).getTime() -
+              Date.now()) /
+              (1000 * 60 * 60 * 24)
+          )
+        )
+      : null
+
   return (
     <>
       <TopBar title="Billing" />
-      <div className="flex flex-col gap-6 p-6 max-w-4xl">
+      <div className="flex flex-col gap-6 p-6 max-w-5xl">
+        {/* Header */}
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Billing</h2>
-          <p className="text-muted-foreground">
-            Manage your subscription and billing details
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold tracking-tight">Billing</h2>
+          </div>
+          <p className="text-muted-foreground mt-1">
+            Manage your subscription, payment method, and billing history
           </p>
         </div>
 
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-5 w-40 rounded bg-muted" />
-                  <div className="h-4 w-64 rounded bg-muted mt-1" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-10 w-full rounded bg-muted" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <BillingPageSkeleton />
         ) : (
           <>
-            {/* Current Plan Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Current Plan
-                </CardTitle>
-                <CardDescription>
-                  Your organization&apos;s active subscription
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-semibold">
-                      {PLAN_CONFIGS[currentPlan].name}
-                    </span>
-                    {subscription && (
-                      <Badge
-                        className={
-                          STATUS_COLORS[subscription.status] ??
-                          'bg-gray-100 text-gray-700'
-                        }
-                      >
-                        {subscription.status.replace('_', ' ')}
-                      </Badge>
-                    )}
-                    {!subscription && (
-                      <Badge className="bg-green-100 text-green-700">
-                        free
-                      </Badge>
-                    )}
-                  </div>
-                  {isAdmin && subscription && isActive && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => portalMutation.mutate()}
-                      disabled={portalMutation.isPending}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      {portalMutation.isPending
-                        ? 'Loading...'
-                        : 'Manage Billing'}
-                    </Button>
-                  )}
-                </div>
+            {/* Stats overview */}
+            <BillingStatsBar
+              planName={PLAN_CONFIGS[currentPlan].name}
+              status={subscription?.status ?? 'free'}
+              nextBillingDate={subscription?.current_period_end ?? null}
+              trialDaysRemaining={trialDaysRemaining}
+              memberCount={usage?.members.current}
+            />
 
-                {subscription?.current_period_end && (
-                  <p className="text-sm text-muted-foreground">
-                    {subscription.cancel_at_period_end
-                      ? 'Cancels on '
-                      : 'Renews on '}
-                    {new Date(
-                      subscription.current_period_end
-                    ).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
-                )}
-
-                {subscription?.status === 'past_due' && (
-                  <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
-                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                    <p className="text-sm text-amber-800">
-                      Your payment is past due. Please update your payment
-                      method to avoid service interruption.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Usage */}
-            {usage && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Usage</CardTitle>
-                  <CardDescription>
-                    Current resource usage for your plan
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>Team Members</span>
-                      </div>
-                      <span className="font-medium">
-                        {usage.members.current}
-                        {usage.members.limit !== null
-                          ? ` / ${usage.members.limit}`
-                          : ' (unlimited)'}
-                      </span>
-                    </div>
-                    {usage.members.limit !== null && (
-                      <Progress
-                        value={
-                          (usage.members.current / usage.members.limit) * 100
-                        }
-                        className="h-2"
-                      />
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Palette className="h-4 w-4 text-muted-foreground" />
-                        <span>Brands</span>
-                      </div>
-                      <span className="font-medium">
-                        {usage.brands.current}
-                        {usage.brands.limit !== null
-                          ? ` / ${usage.brands.limit}`
-                          : ' (unlimited)'}
-                      </span>
-                    </div>
-                    {usage.brands.limit !== null && (
-                      <Progress
-                        value={
-                          (usage.brands.current / usage.brands.limit) * 100
-                        }
-                        className="h-2"
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Past due alert */}
+            {subscription?.status === 'past_due' && (
+              <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800 p-3">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Your payment is past due. Please update your payment method
+                  to avoid service interruption.
+                </p>
+              </div>
             )}
+
+            {/* Usage section */}
+            {usage && (
+              <BillingUsage
+                usage={usage}
+                currentPlan={currentPlan}
+                isAdmin={isAdmin}
+                onUpgrade={(plan) => checkoutMutation.mutate({ plan })}
+              />
+            )}
+
+            {/* Payment Method + Billing History */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BillingPaymentMethod
+                nextBillingDate={subscription?.current_period_end ?? null}
+                isAdmin={isAdmin}
+                onManageBilling={() => portalMutation.mutate()}
+                manageLoading={portalMutation.isPending}
+              />
+              <BillingHistory />
+            </div>
 
             <Separator />
 
-            {/* Plan Cards */}
+            {/* Plan comparison */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Plans</h3>
+              <h3 className="text-lg font-semibold mb-1">Plans</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Choose the right plan for your agency
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {PLAN_ORDER.map((planKey) => {
                   const config = PLAN_CONFIGS[planKey]
                   const isCurrent = currentPlan === planKey
                   const currentIndex = PLAN_ORDER.indexOf(currentPlan)
                   const planIndex = PLAN_ORDER.indexOf(planKey)
-                  const isUpgrade = planIndex > currentIndex
-                  const isDowngrade = planIndex < currentIndex
 
                   return (
-                    <Card
+                    <BillingPlanCard
                       key={planKey}
-                      className={
-                        isCurrent
-                          ? 'border-primary ring-1 ring-primary'
-                          : ''
+                      planKey={planKey}
+                      config={config}
+                      isCurrent={isCurrent}
+                      isUpgrade={planIndex > currentIndex}
+                      isDowngrade={planIndex < currentIndex}
+                      isAdmin={isAdmin}
+                      isActive={isActive}
+                      onUpgrade={(plan) =>
+                        checkoutMutation.mutate({ plan })
                       }
-                    >
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">
-                            {config.name}
-                          </CardTitle>
-                          {isCurrent && (
-                            <Badge variant="default" className="text-xs">
-                              Current
-                            </Badge>
-                          )}
-                        </div>
-                        <CardDescription>{config.description}</CardDescription>
-                        <div className="pt-2">
-                          {config.basePrice === 0 ? (
-                            <span className="text-2xl font-bold">Free</span>
-                          ) : (
-                            <div>
-                              <span className="text-2xl font-bold">
-                                {formatPrice(config.basePrice)}
-                              </span>
-                              <span className="text-muted-foreground text-sm">
-                                /mo
-                              </span>
-                              {config.seatPrice > 0 && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  + {formatPrice(config.seatPrice)}/seat/mo
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <ul className="space-y-2">
-                          {config.features.map((feature) => (
-                            <li
-                              key={feature}
-                              className="flex items-start gap-2 text-sm"
-                            >
-                              <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-
-                        {isAdmin && (
-                          <>
-                            {isCurrent ? (
-                              <Button
-                                variant="outline"
-                                className="w-full"
-                                disabled
-                              >
-                                Current Plan
-                              </Button>
-                            ) : isUpgrade && planKey !== 'starter' ? (
-                              <Button
-                                className="w-full"
-                                onClick={() =>
-                                  checkoutMutation.mutate({
-                                    plan: planKey as 'pro' | 'agency',
-                                  })
-                                }
-                                disabled={checkoutMutation.isPending}
-                              >
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                {checkoutMutation.isPending
-                                  ? 'Loading...'
-                                  : `Upgrade to ${config.name}`}
-                              </Button>
-                            ) : isDowngrade && subscription && isActive ? (
-                              <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => portalMutation.mutate()}
-                                disabled={portalMutation.isPending}
-                              >
-                                {portalMutation.isPending
-                                  ? 'Loading...'
-                                  : 'Manage Plan'}
-                              </Button>
-                            ) : null}
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
+                      onManage={() => portalMutation.mutate()}
+                      upgradeLoading={checkoutMutation.isPending}
+                      manageLoading={portalMutation.isPending}
+                    />
                   )
                 })}
               </div>
@@ -361,5 +181,53 @@ export default function BillingPage() {
         )}
       </div>
     </>
+  )
+}
+
+function BillingPageSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Stats skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="rounded-lg border bg-card p-4 animate-pulse"
+          >
+            <div className="h-5 w-20 rounded bg-muted" />
+            <div className="h-4 w-32 rounded bg-muted mt-2" />
+          </div>
+        ))}
+      </div>
+      {/* Card skeletons */}
+      {[1, 2].map((i) => (
+        <Card key={i} className="animate-pulse">
+          <CardHeader>
+            <div className="h-5 w-40 rounded bg-muted" />
+            <div className="h-4 w-64 rounded bg-muted mt-1" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-10 w-full rounded bg-muted" />
+          </CardContent>
+        </Card>
+      ))}
+      {/* Plan skeletons */}
+      <Separator />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse min-h-[520px]">
+            <CardHeader>
+              <div className="h-5 w-24 rounded bg-muted" />
+              <div className="h-8 w-20 rounded bg-muted mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="h-4 w-full rounded bg-muted" />
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   )
 }
