@@ -20,7 +20,11 @@ below against **staging** before shipping 031.
 2. ✅ Expect 6 phases: **Onboarding → Dig → Design → Build → Launch → Optimize**.
 3. Open each phase. ✅ Expect the checklist auto-populated (33 tasks total),
    with the **GATE** task flagged (raised priority) in every phase except Launch.
-4. Repeat with a **full_service** project. ✅ Expect the same 6 phases + checklist.
+4. Repeat with a **full_service** project. ✅ Expect the org's default
+   **content_ops** workflow, NOT the 6 custom phases — `project.create` maps
+   `full_service` to the content_ops template (`src/trpc/routers/project.ts`),
+   and 031 only installs an org-owned `web_build` template. No tasks are
+   auto-seeded (the seed trigger matches on phase names, which differ).
 
 ## Test 2 — other org is UNAFFECTED (uses the system default)
 1. Sign in to the **other org**. Create a new **web_build** project.

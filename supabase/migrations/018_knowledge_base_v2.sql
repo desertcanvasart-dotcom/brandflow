@@ -40,6 +40,6 @@ UPDATE knowledge_base_documents
     SELECT count(*)
     FROM embeddings
     WHERE embeddings.source_type = 'document'
-      AND embeddings.source_id = knowledge_base_documents.id::text
+      AND embeddings.source_id = knowledge_base_documents.id
   )
   WHERE embedding_status = 'ready';
