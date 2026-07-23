@@ -85,6 +85,14 @@ Rather than depend on that residual uncertainty, `031` includes a guarded **Sect
 
 ---
 
+## Decision 6b — The pipeline ships to operators from its own repo
+
+The operator (the tenant's studio owner) runs the pipeline on her own machine and must NOT receive the app's source code. Distribution is therefore a separate private repo, **`agencybeats-pipeline`**, containing only `pipeline/website-build/*` plus an `install.sh` (registers the six skills in the operator's `~/.claude/skills/`) and a non-technical `GETTING-STARTED.md`.
+
+**Canonical source stays here** (`pipeline/website-build/`), where it evolves alongside the app. The distribution repo is a synced copy: after editing the pipeline here, copy the folder's contents over the distribution repo and push. Operators update with `git pull` + re-running `install.sh`. Do not edit the distribution repo directly — changes there get overwritten by the next sync.
+
+---
+
 ## Decision 7 — Pipeline↔app sync is org-scoped by construction
 
 The sync is the only place the pipeline reaches toward the database, so it gets the same tenant-isolation discipline as the migration:
