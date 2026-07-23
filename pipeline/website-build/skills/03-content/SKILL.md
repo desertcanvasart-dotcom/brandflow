@@ -8,6 +8,7 @@ description: Step 3 of the website creation pipeline. Writes first-draft copy fo
 Write the first-draft copy for every page. The operator edits and finalizes — your job is to get them 80% there in their client's voice, not to ship.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `state.json`. Confirm `current_step` = `03-content` and step 2 is `approved`.
 2. Read `pipeline/artifacts/sitemap-and-plan.md` (page jobs, sections, CTAs, AEO targets) and `pipeline/artifacts/dig-brief.md` (voice, audience language, positioning).
 3. Read brand guidelines in `pipeline/inputs/` for tone and any mandated terminology.

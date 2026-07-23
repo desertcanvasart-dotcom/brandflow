@@ -8,6 +8,7 @@ description: Step 5 of the website creation pipeline. Assembles a build-ready sp
 Package everything into a single document a builder can construct the site from without re-deciding anything. No design or content decisions happen here — those are locked. This is assembly instructions.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `state.json`. Confirm `current_step` = `05-build-spec` and step 4 is `approved`.
 2. Read `design-direction.md`, `content-drafts.md`, and `sitemap-and-plan.md`. Everything you need is already decided in those.
 3. If `status` is `needs_revision`, apply `review_notes`.

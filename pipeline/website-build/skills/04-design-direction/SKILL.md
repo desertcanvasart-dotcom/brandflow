@@ -8,6 +8,7 @@ description: Step 4 of the website creation pipeline. Produces the visual style 
 Define how the site looks and how each page is laid out, so the operator (or their design tool) can execute quickly with decisions already made. Style direction first, then layout — cheap to change direction here, expensive later.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `state.json`. Confirm `current_step` = `04-design-direction` and step 3 is `approved`.
 2. Read `content-drafts.md` (the actual content that must be laid out), `sitemap-and-plan.md` (page jobs, section order), and brand guidelines in `pipeline/inputs/` (colors, fonts, logo, any visual rules).
 3. If `status` is `needs_revision`, apply `review_notes`.

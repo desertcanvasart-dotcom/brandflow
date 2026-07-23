@@ -8,6 +8,7 @@ description: Step 1 of the website creation pipeline. Produces the Dig Brief —
 Produce the **Dig Brief**: the research foundation the entire website is built on. This is the namesake of the operator's method — it should feel substantial and specific, never generic.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `pipeline/state.json`. Confirm you are `current_step` = `01-dig-research`. (This is step one, so upstream approval isn't required — but confirm the pipeline was actually started.)
 2. Read everything in `pipeline/inputs/`: the onboarding questionnaire, brand assets, brand guidelines. If the questionnaire is missing, stop and tell the operator the pipeline can't dig without it.
 3. If `status` is `needs_revision`, read `review_notes` and treat this as a revision pass — apply the notes, don't start over.

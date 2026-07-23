@@ -8,6 +8,7 @@ description: Step 6, the final step of the website creation pipeline. Runs the p
 Audit the built (staging) site against a fixed standard before launch. This is the last gate — approval here means launch-ready. Unlike steps 1–5, this needs the actual built site to inspect, not just upstream artifacts.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `state.json`. Confirm `current_step` = `06-seo-aeo-qa` and step 5 is `approved`.
 2. Confirm a **staging URL** exists in `pipeline/inputs/` or is provided. If the site isn't built yet, stop — this step audits a real site, it doesn't build one.
 3. Read `sitemap-and-plan.md` and the Dig Brief's AEO targets — you're checking the built site delivers on them.

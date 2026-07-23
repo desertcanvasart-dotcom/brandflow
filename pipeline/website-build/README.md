@@ -43,6 +43,21 @@ After each skill runs, it writes its artifact to the project's working folder an
 
 See `orchestrator/README.md` for how the chain is driven and how it reads/writes BrandFlow state.
 
+## Inputs — say everything exactly once
+
+Project inputs come in three layers so the operator never repeats herself:
+
+| Layer | Lives in | Filled in | File |
+|---|---|---|---|
+| **Studio standards** — voice, design taste, tech stack, QA bar | `shared/studio-profile.md` | ONCE, ever | Every skill reads it automatically |
+| **Client identity** — brand voice, colors, personas, competitors | BrandFlow (Brand page + Knowledge Base) | Once per client | Pasted into the questionnaire's brand-kit section at project start |
+| **This project** — goals, must-haves, deadline | `pipeline/inputs/questionnaire.md` | Once per project | Copied from `shared/onboarding-questionnaire.md` |
+
+Starting a project = copy `shared/onboarding-questionnaire.md` into
+`pipeline/inputs/`, paste the client's brand kit from BrandFlow into section A,
+answer section B fresh. If it's a brand-new client, fill section A by hand —
+then enter it into BrandFlow so it's a paste next time.
+
 ## What this is NOT
 
 - It does not send anything to clients automatically. Client-facing approval still happens in the BrandFlow portal; these skills produce the internal work that *becomes* what the client reviews.

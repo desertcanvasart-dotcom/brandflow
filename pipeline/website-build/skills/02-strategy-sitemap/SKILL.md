@@ -8,6 +8,7 @@ description: Step 2 of the website creation pipeline. Turns the approved Dig Bri
 Convert research into a plan: the exact pages the site will have, what each page must accomplish, and the conversion goals the whole site drives toward. Approval of this step freezes scope, so it must be complete and deliberate.
 
 ## Before you start
+0. Read `../../shared/studio-profile.md` (relative to THIS skill file — it lives in the pipeline repo, not the project folder). It holds the studio's standing preferences — voice, design taste, tech stack, writing rules, QA bar. Apply them to everything you produce; they override generic defaults but never override this client's own brand guidelines.
 1. Read `pipeline/state.json`. Confirm `current_step` = `02-strategy-sitemap` and step 1 is `approved`. If step 1 isn't approved, stop.
 2. Read `pipeline/artifacts/dig-brief.md` in full. Everything here derives from it — especially the positioning statement and the AEO target questions.
 3. If `status` is `needs_revision`, apply `review_notes` rather than restarting.
