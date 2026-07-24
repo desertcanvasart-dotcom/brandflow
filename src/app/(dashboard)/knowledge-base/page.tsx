@@ -107,8 +107,8 @@ export default function KnowledgeBasePage() {
                 Agency Intelligence Hub
               </h2>
               <p className="text-muted-foreground">
-                Train your AI agents with brand knowledge, strategy docs, and company
-                processes
+                Everything your AI agents read. Agency-wide knowledge applies to
+                every client; brand and project knowledge stays with its own.
               </p>
             </div>
           </div>

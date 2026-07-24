@@ -5,7 +5,7 @@ import { notFound, useSearchParams } from 'next/navigation'
 import { TopBar } from '@/components/layout/top-bar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { trpc } from '@/trpc/client'
 import { BrandOverview } from '@/components/brands/brand-overview'
@@ -14,6 +14,7 @@ import { BrandAssets } from '@/components/brands/brand-assets'
 import { BrandClientAccess } from '@/components/brands/brand-client-access'
 import { BrandContacts } from '@/components/brands/brand-contacts'
 import { KBDocumentList } from '@/components/knowledge-base/kb-document-list'
+import { KBUploadDialog } from '@/components/knowledge-base/kb-upload-dialog'
 import { BrandSocialSettings } from '@/components/social/brand-social-settings'
 import type { ContentPlatform } from '@/types/enums'
 
@@ -113,7 +114,36 @@ function BrandDetailContent({ params }: { params: Promise<{ id: string }> }) {
             />
           </TabsContent>
           <TabsContent value="knowledge-base" className="mt-6">
-            <KBDocumentList brandId={brand.id} />
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    What we know about {brand.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Only this brand&apos;s knowledge. Your agency-wide knowledge
+                    applies here too — see the{' '}
+                    <Link
+                      href="/knowledge-base"
+                      className="underline underline-offset-2 hover:text-foreground"
+                    >
+                      Knowledge Base
+                    </Link>
+                    .
+                  </p>
+                </div>
+                <KBUploadDialog
+                  brandId={brand.id}
+                  trigger={
+                    <Button size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Knowledge
+                    </Button>
+                  }
+                />
+              </div>
+              <KBDocumentList brandId={brand.id} />
+            </div>
           </TabsContent>
           <TabsContent value="clients" className="mt-6">
             <BrandClientAccess brandId={brand.id} />
