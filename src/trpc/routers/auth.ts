@@ -18,6 +18,24 @@ export const authRouter = createTRPCRouter({
       displayName: z.string().min(1),
     }))
     .mutation(async ({ input }) => {
+      const orgSlug = slugify(input.orgName)
+
+      // Check for an existing org with this slug before creating anything —
+      // avoids a create-user-then-rollback round trip for the common case,
+      // and gives a clear next step instead of a raw constraint error.
+      const { data: existingOrg } = await supabaseAdmin
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .maybeSingle()
+
+      if (existingOrg) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `An organization named "${input.orgName}" already exists. Ask an admin there to send you an invite instead of signing up.`,
+        })
+      }
+
       // Create user via admin API — auto-confirmed, no email sent
       const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: input.email,
@@ -34,9 +52,8 @@ export const authRouter = createTRPCRouter({
         throw new TRPCError({ code: 'BAD_REQUEST', message: msg })
       }
 
-      const orgSlug = slugify(input.orgName)
-
-      // Create organization
+      // Create organization (unique constraint on slug still backstops the
+      // pre-check above against a concurrent signup with the same name)
       const { data: org, error: orgError } = await supabaseAdmin
         .from('organizations')
         .insert({ name: input.orgName, slug: orgSlug })

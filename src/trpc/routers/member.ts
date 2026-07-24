@@ -1,6 +1,6 @@
 import { z } from 'zod/v4'
 import { TRPCError } from '@trpc/server'
-import { createTRPCRouter, orgProcedure, adminProcedure, authedProcedure } from '../init'
+import { createTRPCRouter, orgProcedure, adminProcedure, authedProcedure, publicProcedure } from '../init'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { resend } from '@/lib/email/client'
 import { canAddSeat } from '@/lib/stripe/helpers'
@@ -98,6 +98,105 @@ export const memberRouter = createTRPCRouter({
       return invitation
     }),
 
+  invitePreview: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const { data: invitation } = await supabaseAdmin
+        .from('invitations')
+        .select('email, expires_at, organization_id, organizations(name)')
+        .eq('token', input.token)
+        .eq('status', 'pending')
+        .single<Pick<InvitationRow, 'email' | 'expires_at' | 'organization_id'> & {
+          organizations: { name: string } | null
+        }>()
+
+      if (!invitation || new Date(invitation.expires_at) < new Date()) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invalid or expired invitation' })
+      }
+
+      return {
+        email: invitation.email,
+        organizationName: invitation.organizations?.name ?? 'the organization',
+      }
+    }),
+
+  // Signup path for an invitee with no account yet: the invite token is the
+  // authorization, and the email comes from the invitation — never the caller.
+  signupViaInvite: publicProcedure
+    .input(z.object({
+      token: z.string(),
+      password: z.string().min(6),
+      displayName: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const { data: invitation } = await supabaseAdmin
+        .from('invitations')
+        .select('*')
+        .eq('token', input.token)
+        .eq('status', 'pending')
+        .single<InvitationRow>()
+
+      if (!invitation) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invalid or expired invitation' })
+      }
+
+      if (new Date(invitation.expires_at) < new Date()) {
+        await supabaseAdmin
+          .from('invitations')
+          .update({ status: 'expired' as const })
+          .eq('id', invitation.id)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invitation has expired' })
+      }
+
+      const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: invitation.email,
+        password: input.password,
+        email_confirm: true,
+        user_metadata: { display_name: input.displayName },
+      })
+
+      if (createError || !user) {
+        const msg = createError?.message ?? 'Failed to create account'
+        if (msg.includes('already been registered')) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'You already have an account — sign in, then open this invite link again.',
+          })
+        }
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg })
+      }
+
+      const { error: memberError } = await supabaseAdmin
+        .from('organization_members')
+        .insert({
+          organization_id: invitation.organization_id,
+          user_id: user.id,
+          role: invitation.role,
+          display_name: input.displayName,
+          department_id: invitation.department_id ?? null,
+          job_title: invitation.job_title ?? null,
+        })
+
+      if (memberError) {
+        await supabaseAdmin.auth.admin.deleteUser(user.id)
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: memberError.message })
+      }
+
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        app_metadata: {
+          organization_id: invitation.organization_id,
+          user_role: invitation.role,
+        },
+      })
+
+      await supabaseAdmin
+        .from('invitations')
+        .update({ status: 'accepted' as const })
+        .eq('id', invitation.id)
+
+      return { email: invitation.email }
+    }),
+
   acceptInvite: authedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -121,6 +220,15 @@ export const memberRouter = createTRPCRouter({
           .update({ status: 'expired' as const })
           .eq('id', invitation.id)
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invitation has expired' })
+      }
+
+      // The invite link is a bearer token — bind acceptance to the invited
+      // email so a forwarded/leaked link can't attach someone else's account.
+      if (ctx.user!.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: `This invitation was sent to ${invitation.email}. Sign in with that email to accept it.`,
+        })
       }
 
       // Create org membership
