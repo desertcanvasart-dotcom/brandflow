@@ -57,7 +57,7 @@ Fonts: ${brand.fonts ? JSON.stringify(brand.fonts) : 'N/A'}`
   // Run all enrichment layers in parallel
   const [ragContext, campaignHistory, strategyContext, feedbackContext] =
     await Promise.all([
-      buildRagContext(orgId, userQuery),
+      buildRagContext(orgId, userQuery, brandId),
       brandId ? buildCampaignHistory(supabase, orgId, brandId) : '',
       brandId ? buildStrategyContext(supabase, brandId) : '',
       brandId ? buildFeedbackContext(orgId, brandId, agentType) : '',
@@ -76,6 +76,7 @@ Fonts: ${brand.fonts ? JSON.stringify(brand.fonts) : 'N/A'}`
 async function buildRagContext(
   orgId: string,
   query: string,
+  brandId?: string,
 ): Promise<string> {
   try {
     const results = await searchSimilar({
@@ -83,6 +84,9 @@ async function buildRagContext(
       query,
       limit: 5,
       threshold: 0.65,
+      // Client-facing output: never retrieve another brand's material.
+      // Agency-scope knowledge is still included (see match_embeddings).
+      brandId,
     })
 
     if (!results || results.length === 0) return ''
