@@ -28,6 +28,10 @@ export async function POST(req: Request) {
       sourceType: 'document',
       limit: 8,
       threshold: 0.6,
+      // When a brand is selected, answer from that brand plus agency
+      // knowledge only. With no brand selected this stays org-wide,
+      // which is what the agency's own hub Ask is for.
+      brandId,
     })
 
     if (!results || results.length === 0) {

@@ -8,6 +8,7 @@ export const searchRouter = createTRPCRouter({
       query: z.string().min(1),
       sourceType: z.enum(['brand_guidelines', 'meeting_transcript', 'content_item', 'brief', 'comment', 'document']).optional(),
       limit: z.number().min(1).max(20).optional(),
+      brandId: z.string().uuid().optional(),
     }))
     .query(async ({ ctx, input }) => {
       return searchSimilar({
@@ -15,6 +16,7 @@ export const searchRouter = createTRPCRouter({
         query: input.query,
         sourceType: input.sourceType,
         limit: input.limit ?? 10,
+        brandId: input.brandId,
       })
     }),
 })

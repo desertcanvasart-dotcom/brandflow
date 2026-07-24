@@ -61,6 +61,13 @@ interface SearchParams {
   sourceType?: EmbeddingSourceType
   limit?: number
   threshold?: number
+  /**
+   * Restrict results to one brand. Agency-scope rows (brand_id IS NULL)
+   * are always included, so the agency's own process knowledge informs
+   * every client's output while one client's material never reaches
+   * another. Omit to search the whole organization.
+   */
+  brandId?: string
 }
 
 export async function searchSimilar({
@@ -69,6 +76,7 @@ export async function searchSimilar({
   sourceType,
   limit = 10,
   threshold = 0.7,
+  brandId,
 }: SearchParams) {
   const queryEmbedding = await generateEmbedding(query)
 
@@ -78,6 +86,7 @@ export async function searchSimilar({
     match_threshold: threshold,
     match_count: limit,
     filter_source_type: sourceType ?? null,
+    filter_brand_id: brandId ?? null,
   } as any)
 
   if (error) {
