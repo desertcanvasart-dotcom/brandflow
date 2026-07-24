@@ -1,6 +1,8 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketingHeader } from '@/components/marketing/marketing-header'
 import { MarketingFooter } from '@/components/marketing/marketing-footer'
+import { ContactForm } from '@/components/marketing/contact-form'
 import {
   MapPin,
   Phone,
@@ -46,7 +48,7 @@ const supportChannels = [
     description:
       'Having trouble with a feature? Our support engineers are here to help.',
     cta: 'Open a Ticket',
-    href: '#',
+    href: '#contact-form',
   },
   {
     icon: MessageSquare,
@@ -54,7 +56,7 @@ const supportChannels = [
     description:
       'Interested in Agency Beats for your agency? Let us walk you through the platform.',
     cta: 'Talk to Sales',
-    href: '#',
+    href: '#contact-form',
   },
   {
     icon: BookOpen,
@@ -65,6 +67,13 @@ const supportChannels = [
     href: '/docs',
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'Contact Us',
+  description:
+    "Get in touch with the Agency Beats team — sales, support, or general questions. We reply within one business day.",
+  alternates: { canonical: '/contact' },
+}
 
 export default function ContactPage() {
   return (
@@ -149,7 +158,7 @@ export default function ContactPage() {
               </div>
 
               {/* Right: Contact form */}
-              <div className="lg:col-span-3">
+              <div id="contact-form" className="lg:col-span-3 scroll-mt-24">
                 <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
                   <h3 className="text-xl font-bold mb-1">Send us a message</h3>
                   <p className="text-sm text-muted-foreground mb-6">
@@ -157,120 +166,7 @@ export default function ContactPage() {
                     business day.
                   </p>
 
-                  <form className="space-y-5">
-                    {/* Name row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label
-                          htmlFor="firstName"
-                          className="block text-sm font-medium mb-1.5"
-                        >
-                          First Name
-                        </label>
-                        <input
-                          id="firstName"
-                          type="text"
-                          placeholder="John"
-                          className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="lastName"
-                          className="block text-sm font-medium mb-1.5"
-                        >
-                          Last Name
-                        </label>
-                        <input
-                          id="lastName"
-                          type="text"
-                          placeholder="Doe"
-                          className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium mb-1.5"
-                      >
-                        Email
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="john@agency.com"
-                        className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                      />
-                    </div>
-
-                    {/* Company */}
-                    <div>
-                      <label
-                        htmlFor="company"
-                        className="block text-sm font-medium mb-1.5"
-                      >
-                        Agency / Company
-                      </label>
-                      <input
-                        id="company"
-                        type="text"
-                        placeholder="Acme Agency"
-                        className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                      />
-                    </div>
-
-                    {/* Subject */}
-                    <div>
-                      <label
-                        htmlFor="subject"
-                        className="block text-sm font-medium mb-1.5"
-                      >
-                        Subject
-                      </label>
-                      <select
-                        id="subject"
-                        className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                        defaultValue=""
-                      >
-                        <option value="" disabled>
-                          Select a topic
-                        </option>
-                        <option value="demo">Request a Demo</option>
-                        <option value="sales">Sales Inquiry</option>
-                        <option value="support">Technical Support</option>
-                        <option value="billing">Billing Question</option>
-                        <option value="partnership">Partnership</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-
-                    {/* Message */}
-                    <div>
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-medium mb-1.5"
-                      >
-                        Message
-                      </label>
-                      <textarea
-                        id="message"
-                        rows={5}
-                        placeholder="Tell us about your agency and how we can help..."
-                        className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors resize-none"
-                      />
-                    </div>
-
-                    {/* Submit */}
-                    <button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg px-6 py-3 text-sm font-medium transition-all hover:shadow-lg hover:shadow-indigo-500/25"
-                    >
-                      Send Message
-                    </button>
-                  </form>
+                  <ContactForm />
                 </div>
               </div>
             </div>

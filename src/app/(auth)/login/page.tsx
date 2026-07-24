@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,18 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // The OAuth round-trip fails server-side, in the callback route — it
+  // redirects back here with ?error=... rather than rejecting a promise
+  // this page can catch directly.
+  useEffect(() => {
+    const oauthError = searchParams.get('error')
+    if (oauthError === 'auth_failed') {
+      setError('Google sign-in failed. Please try again or use your email and password.')
+    } else if (oauthError) {
+      setError(searchParams.get('error_description') || 'Sign-in failed. Please try again.')
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,19 +50,27 @@ function LoginForm() {
   }
 
   const handleGoogleLogin = async () => {
+    setError(null)
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${redirect}`,
       },
     })
+    // signInWithOAuth navigates away on success; getting here at all means
+    // it failed (e.g. Google isn't configured as a provider) — surface it
+    // instead of leaving the button looking like it did nothing.
+    if (error) {
+      setError(error.message)
+    }
   }
 
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Agency Beats</CardTitle>
+        <h1 className="sr-only">Sign in to Agency Beats</h1>
+        <CardTitle className="text-2xl font-bold" aria-hidden="true">Agency Beats</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +79,9 @@ function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -70,7 +92,9 @@ function LoginForm() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

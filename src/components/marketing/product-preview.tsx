@@ -326,7 +326,7 @@ export function ProductPreview() {
   const [activeTab, setActiveTab] = useState<TabId>('campaigns')
 
   return (
-    <section id="features" className="bg-[#0F172A] py-20 md:py-28">
+    <section id="product-preview" className="bg-[#0F172A] py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4">
         {/* Tab bar */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">

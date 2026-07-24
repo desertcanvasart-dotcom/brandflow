@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { LegalPageLayout } from '@/components/marketing/legal-page-layout'
 
 const sections = [
@@ -72,6 +73,12 @@ const sections = [
     ],
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'The terms governing your use of Agency Beats.',
+  alternates: { canonical: '/terms' },
+}
 
 export default function TermsPage() {
   return (

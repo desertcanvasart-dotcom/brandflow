@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { LegalPageLayout } from '@/components/marketing/legal-page-layout'
 
 const sections = [
@@ -62,6 +63,12 @@ const sections = [
     ],
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'How Agency Beats collects, uses, and protects your data.',
+  alternates: { canonical: '/privacy' },
+}
 
 export default function PrivacyPage() {
   return (

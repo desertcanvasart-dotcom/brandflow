@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketingHeader } from '@/components/marketing/marketing-header'
 import { MarketingFooter } from '@/components/marketing/marketing-footer'
@@ -116,6 +117,12 @@ const categories = [
   },
 ]
 
+export const metadata: Metadata = {
+  title: 'Documentation',
+  description: 'Guides and references for setting up and running your agency on Agency Beats.',
+  alternates: { canonical: '/docs' },
+}
+
 export default function DocsPage() {
   return (
     <>
@@ -178,17 +185,31 @@ export default function DocsPage() {
                       {category.description}
                     </p>
                     <ul className="space-y-2">
-                      {category.links.map((link) => (
-                        <li key={link.label}>
-                          <Link
-                            href={link.href}
-                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 inline-flex items-center gap-1 group/link"
-                          >
-                            <ArrowRight className="h-3 w-3 opacity-0 -ml-4 group-hover/link:opacity-100 group-hover/link:ml-0 transition-all" />
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
+                      {category.links.map((link) => {
+                        // Article not written yet — render as inert text
+                        // rather than a link that goes nowhere.
+                        if (link.href === '#') {
+                          return (
+                            <li key={link.label}>
+                              <span className="text-sm text-muted-foreground/60 inline-flex items-center gap-1 cursor-not-allowed">
+                                {link.label}
+                                <span className="text-xs">(coming soon)</span>
+                              </span>
+                            </li>
+                          )
+                        }
+                        return (
+                          <li key={link.label}>
+                            <Link
+                              href={link.href}
+                              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 inline-flex items-center gap-1 group/link"
+                            >
+                              <ArrowRight className="h-3 w-3 opacity-0 -ml-4 group-hover/link:opacity-100 group-hover/link:ml-0 transition-all" />
+                              {link.label}
+                            </Link>
+                          </li>
+                        )
+                      })}
                     </ul>
                   </div>
                 )
@@ -208,17 +229,18 @@ export default function DocsPage() {
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="#"
+                href="/contact"
                 className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full px-6 py-2.5 text-sm font-medium hover:shadow-lg hover:shadow-indigo-500/25 transition-all"
               >
                 Contact Support
               </a>
-              <a
-                href="#"
-                className="inline-flex items-center justify-center border border-slate-600 text-slate-300 hover:border-indigo-400 hover:text-white rounded-full px-6 py-2.5 text-sm font-medium transition-all"
+              {/* No community forum exists yet — inert rather than a fake link */}
+              <span
+                aria-label="Community (coming soon)"
+                className="inline-flex items-center justify-center border border-slate-600 text-slate-400 rounded-full px-6 py-2.5 text-sm font-medium opacity-50 cursor-not-allowed"
               >
-                Join Community
-              </a>
+                Join Community (coming soon)
+              </span>
             </div>
           </div>
         </section>
