@@ -129,9 +129,9 @@ handshake: click Connect and authorize on the platform.
   it manages several, you are returned to this tab with a picker listing them; choose the Page for
   this brand. A linked Instagram business account is connected at the same time.
 - **X (Twitter)** — connects directly.
-- **LinkedIn** — connects directly for a single company page, and falls back to personal-profile
-  posting if you administer none. **If you administer more than one company page the connection
-  cannot currently be completed** — see [section 13](#known-gaps-as-of-this-document).
+- **LinkedIn** — a single company page connects automatically, and administering none falls back to
+  personal-profile posting. If you administer several, you are returned to this tab with a picker;
+  choose the organization for this brand.
 
 **Verify:** `/settings?section=social-media` lists every brand with a green dot against each
 connected platform. Anything grey is not connected and will not publish.
@@ -404,17 +404,13 @@ tokens stored alongside them), the callback returns you to the brand's Social ta
 opens there. Choosing a Page completes the connection, including any linked Instagram business
 account.
 
-### 3. LinkedIn accounts with multiple company pages cannot finish connecting
+### 3. ~~LinkedIn accounts with multiple company pages cannot finish connecting~~ — fixed
 
-The same dead end as item 2, in the LinkedIn files, and **not yet fixed**. One company page connects
-cleanly and zero falls back to personal-profile posting; more than one stores a `linkedin_orgs_data`
-cookie, redirects with `linkedin=select_org`, and has no reachable picker — `LinkedInOrgSelector` is
-imported nowhere and `/api/auth/linkedin/organizations` exposes only `POST`.
+The same dead end as item 2, in the LinkedIn files: more than one administered company page stored a
+`linkedin_orgs_data` cookie, redirected with `linkedin=select_org`, and had no reachable picker.
 
-Workaround: connect with an account administering a single company page.
-
-*Fix: mirror what was done for Meta — add a `GET`, redirect to the brand Social tab, mount the
-selector.*
+**Fixed** the same way — `/api/auth/linkedin/organizations` gained a `GET` returning display fields
+only, the callback returns you to the brand's Social tab, and `LinkedInOrgSelector` opens there.
 
 ### 4. The intake → brief → task chain cannot be started
 
@@ -443,5 +439,5 @@ are pulled back into the system.
 
 ---
 
-*Item 3 is a direct copy of the fix already applied for Meta. Item 5 is wiring an existing component
-into a page. Item 4 needs a transcript input added to the meeting UI.*
+*Item 5 is wiring an existing component into a page. Item 4 needs a transcript input added to the
+meeting UI.*

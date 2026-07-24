@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { SocialConnectCard } from '@/components/social/social-connect-card'
 import { MetaPageSelector } from '@/components/social/meta-page-selector'
+import { LinkedInOrgSelector } from '@/components/social/linkedin-org-selector'
 import { trpc } from '@/trpc/client'
 import type { ContentPlatform } from '@/types/enums'
 
@@ -14,6 +15,13 @@ interface MetaPage {
   id: string
   name: string
   picture?: string
+}
+
+interface LinkedInOrganization {
+  id: string
+  name: string
+  logoUrl?: string
+  vanityName?: string
 }
 
 interface BrandSocialSettingsProps {
@@ -28,62 +36,69 @@ export function BrandSocialSettings({ brandId, brandPlatforms }: BrandSocialSett
   const utils = trpc.useUtils()
 
   const [pendingPages, setPendingPages] = useState<MetaPage[] | null>(null)
+  const [pendingOrgs, setPendingOrgs] = useState<LinkedInOrganization[] | null>(null)
 
   // Filter to only social platforms that the brand has configured
   const socialPlatforms = brandPlatforms.filter((p) => SOCIAL_PLATFORMS.includes(p))
 
-  // Drop the `meta` param so a refresh doesn't reopen the picker
-  const clearMetaParam = useCallback(() => {
+  // Drop the flow params so a refresh doesn't reopen a picker
+  const clearFlowParams = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString())
     params.delete('meta')
+    params.delete('linkedin')
     params.set('tab', 'social')
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [router, pathname, searchParams])
 
-  // Meta returns here with ?meta=select_page when the account manages more than
-  // one Page. The list lives in an httpOnly cookie, so fetch it back to choose from.
+  // Meta and LinkedIn both return here when the account manages more than one
+  // Page / organization. The list lives in an httpOnly cookie, so fetch it back
+  // to choose from.
   useEffect(() => {
-    if (searchParams.get('meta') !== 'select_page') return
+    const wantsMeta = searchParams.get('meta') === 'select_page'
+    const wantsLinkedIn = searchParams.get('linkedin') === 'select_org'
+    if (!wantsMeta && !wantsLinkedIn) return
+
+    const endpoint = wantsMeta
+      ? '/api/auth/meta/pages'
+      : '/api/auth/linkedin/organizations'
+    const label = wantsMeta ? 'Facebook Pages' : 'LinkedIn organizations'
 
     let cancelled = false
 
-    fetch('/api/auth/meta/pages')
+    fetch(endpoint)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data.error ?? 'Could not load your Facebook Pages')
-        return data as { brandId: string; pages: MetaPage[] }
+        if (!res.ok) throw new Error(data.error ?? `Could not load your ${label}`)
+        return data as {
+          brandId: string
+          pages?: MetaPage[]
+          organizations?: LinkedInOrganization[]
+        }
       })
       .then((data) => {
         if (cancelled) return
         if (data.brandId !== brandId) {
-          toast.error('That Meta connection was started for a different brand.')
-          clearMetaParam()
+          toast.error('That connection was started for a different brand.')
+          clearFlowParams()
           return
         }
-        setPendingPages(data.pages)
+        if (wantsMeta) setPendingPages(data.pages ?? [])
+        else setPendingOrgs(data.organizations ?? [])
       })
       .catch((err: Error) => {
         if (cancelled) return
         toast.error(err.message)
-        clearMetaParam()
+        clearFlowParams()
       })
 
     return () => {
       cancelled = true
     }
-  }, [searchParams, brandId, clearMetaParam])
+  }, [searchParams, brandId, clearFlowParams])
 
-  function handlePickerClose(open: boolean) {
-    if (open) return
-    setPendingPages(null)
-    clearMetaParam()
-  }
-
-  function handlePickerComplete() {
+  function refreshConnections() {
     utils.social.getConnections.invalidate({ brandId })
     utils.social.getConnectionsByOrg.invalidate()
-    setPendingPages(null)
-    clearMetaParam()
   }
 
   return (
@@ -115,8 +130,34 @@ export function BrandSocialSettings({ brandId, brandPlatforms }: BrandSocialSett
           brandId={brandId}
           pages={pendingPages}
           open
-          onOpenChange={handlePickerClose}
-          onComplete={handlePickerComplete}
+          onOpenChange={(open) => {
+            if (open) return
+            setPendingPages(null)
+            clearFlowParams()
+          }}
+          onComplete={() => {
+            refreshConnections()
+            setPendingPages(null)
+            clearFlowParams()
+          }}
+        />
+      )}
+
+      {pendingOrgs && (
+        <LinkedInOrgSelector
+          brandId={brandId}
+          organizations={pendingOrgs}
+          open
+          onOpenChange={(open) => {
+            if (open) return
+            setPendingOrgs(null)
+            clearFlowParams()
+          }}
+          onComplete={() => {
+            refreshConnections()
+            setPendingOrgs(null)
+            clearFlowParams()
+          }}
         />
       )}
     </div>
