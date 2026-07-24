@@ -36,11 +36,27 @@ export function useFileUpload() {
 
       const { uploadUrl, publicUrl } = await res.json()
 
-      await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      })
+      // The PUT goes browser → storage directly, so a blocked origin surfaces as
+      // a TypeError with no response at all. Name it rather than letting the
+      // caller report a bare "Failed to fetch".
+      let putRes: Response
+      try {
+        putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+      } catch {
+        throw new Error(
+          'Could not reach file storage. This is usually a CORS setting on the storage bucket — the app origin has to be an allowed origin.'
+        )
+      }
+
+      // Without this check a rejected upload still resolves, and the caller
+      // saves a URL for an object that was never written.
+      if (!putRes.ok) {
+        throw new Error(`Upload rejected by storage (${putRes.status})`)
+      }
 
       setProgress(100)
       return publicUrl as string

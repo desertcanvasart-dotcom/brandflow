@@ -134,6 +134,7 @@ export const brandRouter = createTRPCRouter({
       name: z.string().min(1),
       description: z.string().optional(),
       websiteUrl: z.string().url().optional().or(z.literal('')),
+      logoUrl: z.string().optional(),
       platforms: z.array(z.enum([
         'instagram', 'facebook', 'twitter', 'linkedin',
         'tiktok', 'youtube', 'blog', 'newsletter', 'other',
@@ -159,6 +160,7 @@ export const brandRouter = createTRPCRouter({
           slug,
           description: input.description ?? null,
           website_url: input.websiteUrl || null,
+          logo_url: input.logoUrl || null,
           platforms: input.platforms ?? [],
         })
         .select()

@@ -1,7 +1,7 @@
 'use client'
 
-import { use } from 'react'
-import { notFound } from 'next/navigation'
+import { Suspense, use } from 'react'
+import { notFound, useSearchParams } from 'next/navigation'
 import { TopBar } from '@/components/layout/top-bar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -14,10 +14,23 @@ import { BrandAssets } from '@/components/brands/brand-assets'
 import { BrandClientAccess } from '@/components/brands/brand-client-access'
 import { BrandContacts } from '@/components/brands/brand-contacts'
 import { KBDocumentList } from '@/components/knowledge-base/kb-document-list'
+import { BrandSocialSettings } from '@/components/social/brand-social-settings'
+import type { ContentPlatform } from '@/types/enums'
 
 export default function BrandDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" /></div>}>
+      <BrandDetailContent params={params} />
+    </Suspense>
+  )
+}
+
+function BrandDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const searchParams = useSearchParams()
   const { data: brand, isLoading } = trpc.brand.getById.useQuery({ id })
+
+  const defaultTab = searchParams.get('tab') ?? 'overview'
 
   if (isLoading) {
     return (
@@ -71,12 +84,13 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="guidelines">Guidelines</TabsTrigger>
             <TabsTrigger value="assets">Assets</TabsTrigger>
+            <TabsTrigger value="social">Social</TabsTrigger>
             <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
             <TabsTrigger value="clients">Client Access</TabsTrigger>
           </TabsList>
@@ -91,6 +105,12 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
           </TabsContent>
           <TabsContent value="assets" className="mt-6">
             <BrandAssets brandId={brand.id} />
+          </TabsContent>
+          <TabsContent value="social" className="mt-6">
+            <BrandSocialSettings
+              brandId={brand.id}
+              brandPlatforms={(brand.platforms ?? []) as ContentPlatform[]}
+            />
           </TabsContent>
           <TabsContent value="knowledge-base" className="mt-6">
             <KBDocumentList brandId={brand.id} />

@@ -5,13 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Plus, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Plus, ChevronDown, ChevronRight, Calendar, Check } from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { toast } from 'sonner'
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
 import { TaskDetailPanel } from '@/components/tasks/task-detail-panel'
+import { usePermissions } from '@/hooks/use-permissions'
 import type { Database } from '@/types/database'
+
+type PhaseStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped'
 
 const PHASE_STATUS_COLORS: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700',
@@ -20,11 +29,19 @@ const PHASE_STATUS_COLORS: Record<string, string> = {
   skipped: 'bg-yellow-100 text-yellow-700',
 }
 
+const PHASE_STATUS_OPTIONS: { value: PhaseStatus; label: string }[] = [
+  { value: 'not_started', label: 'Not started' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'skipped', label: 'Skipped' },
+]
+
 export function PhaseTracker({ projectId }: { projectId: string }) {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   const utils = trpc.useUtils()
+  const { canManageProjects } = usePermissions()
   const { data: phases, isLoading: phasesLoading } = trpc.phase.list.useQuery({ projectId })
   const { data: allTasks } = trpc.task.list.useQuery({ projectId })
 
@@ -32,6 +49,14 @@ export function PhaseTracker({ projectId }: { projectId: string }) {
     onSuccess: () => {
       utils.task.list.invalidate({ projectId })
       toast.success('Task created')
+    },
+    onError: (err) => toast.error(err.message),
+  })
+
+  const updatePhaseMutation = trpc.phase.update.useMutation({
+    onSuccess: (phase) => {
+      utils.phase.list.invalidate({ projectId })
+      toast.success(`${phase.name} marked ${phase.status.replace('_', ' ')}`)
     },
     onError: (err) => toast.error(err.message),
   })
@@ -101,9 +126,52 @@ export function PhaseTracker({ projectId }: { projectId: string }) {
                         <ChevronRight className="h-4 w-4" />
                       )}
                       <CardTitle className="text-base">{phase.name}</CardTitle>
-                      <Badge className={`text-xs ${PHASE_STATUS_COLORS[phase.status] ?? ''}`}>
-                        {phase.status.replace('_', ' ')}
-                      </Badge>
+                      {canManageProjects ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              disabled={updatePhaseMutation.isPending}
+                              aria-label={`Change status of ${phase.name}`}
+                            >
+                              <Badge
+                                className={`text-xs cursor-pointer ${PHASE_STATUS_COLORS[phase.status] ?? ''}`}
+                              >
+                                {phase.status.replace('_', ' ')}
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </Badge>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="start"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {PHASE_STATUS_OPTIONS.map((option) => (
+                              <DropdownMenuItem
+                                key={option.value}
+                                disabled={option.value === phase.status}
+                                onSelect={() =>
+                                  updatePhaseMutation.mutate({
+                                    id: phase.id,
+                                    status: option.value,
+                                  })
+                                }
+                              >
+                                {option.value === phase.status && (
+                                  <Check className="mr-2 h-3.5 w-3.5" />
+                                )}
+                                <span className={option.value === phase.status ? '' : 'ml-[1.375rem]'}>
+                                  {option.label}
+                                </span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Badge className={`text-xs ${PHASE_STATUS_COLORS[phase.status] ?? ''}`}>
+                          {phase.status.replace('_', ' ')}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       {phase.milestone_name && (
