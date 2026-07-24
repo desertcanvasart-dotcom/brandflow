@@ -85,10 +85,16 @@ export default function TeamPage() {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('none')
   const [selectedJobTitle, setSelectedJobTitle] = useState('')
 
+  // Cancel-invitation confirmation
+  const [cancelInviteFor, setCancelInviteFor] = useState<{ id: string; email: string } | null>(null)
+
   // Queries — 3 parallel
   const { data: members, isLoading: membersLoading } = trpc.member.list.useQuery()
   const { data: departments, isLoading: deptsLoading } = trpc.department.list.useQuery()
   const { data: workloadsRaw } = trpc.member.getWorkloads.useQuery()
+  const { data: invitations } = trpc.member.listInvitations.useQuery(undefined, {
+    enabled: isAdmin,
+  })
   const isLoading = membersLoading || deptsLoading
 
   // Workload map: userId → MemberWorkload
@@ -159,6 +165,7 @@ export default function TeamPage() {
   const inviteMutation = trpc.member.invite.useMutation({
     onSuccess: () => {
       toast.success('Invitation sent')
+      utils.member.listInvitations.invalidate()
       setInviteOpen(false)
       setInviteEmail('')
       setInviteRole('creator')
@@ -166,6 +173,19 @@ export default function TeamPage() {
       setInviteJobTitle('')
     },
     onError: (err) => toast.error(err.message),
+  })
+  const cancelInvitationMutation = trpc.member.cancelInvitation.useMutation({
+    onSuccess: () => {
+      toast.success('Invitation cancelled')
+      utils.member.listInvitations.invalidate()
+      setCancelInviteFor(null)
+    },
+    onError: (err) => {
+      toast.error(err.message)
+      // Refresh either way — a NOT_FOUND means the list is already stale.
+      utils.member.listInvitations.invalidate()
+      setCancelInviteFor(null)
+    },
   })
   const updateMemberMutation = trpc.member.updateMember.useMutation({
     onSuccess: () => {
@@ -404,6 +424,49 @@ export default function TeamPage() {
           </Select>
         </div>
 
+        {/* Pending invitations */}
+        {isAdmin && invitations && invitations.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium">
+                  Pending invitations ({invitations.length})
+                </h3>
+              </div>
+              <div className="divide-y">
+                {invitations.map((invitation) => (
+                  <div
+                    key={invitation.id}
+                    className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{invitation.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ROLE_LABELS[invitation.role as UserRole] ?? invitation.role}
+                        {' · '}
+                        {invitation.isExpired
+                          ? 'Expired'
+                          : `Expires ${new Date(invitation.expires_at).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setCancelInviteFor({ id: invitation.id, email: invitation.email })
+                      }
+                    >
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      Cancel
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Content */}
         {isLoading ? (
           <div className="space-y-3">
@@ -454,6 +517,38 @@ export default function TeamPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Invitation Dialog */}
+      <Dialog
+        open={cancelInviteFor !== null}
+        onOpenChange={(open) => { if (!open) setCancelInviteFor(null) }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Cancel invitation?</DialogTitle>
+            <DialogDescription>
+              The invitation link sent to {cancelInviteFor?.email} will stop
+              working immediately. You can always send a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelInviteFor(null)}>
+              Keep it
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelInvitationMutation.isPending}
+              onClick={() => {
+                if (cancelInviteFor) {
+                  cancelInvitationMutation.mutate({ invitationId: cancelInviteFor.id })
+                }
+              }}
+            >
+              {cancelInvitationMutation.isPending ? 'Cancelling...' : 'Cancel invitation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Member Dialog */}
       <Dialog

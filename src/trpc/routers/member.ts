@@ -25,6 +25,61 @@ export const memberRouter = createTRPCRouter({
     return data ?? []
   }),
 
+  listInvitations: adminProcedure.query(async ({ ctx }) => {
+    // `token` is deliberately not selected — it is a bearer credential that
+    // grants org access, and nothing in the UI needs it.
+    const { data } = await ctx.supabase
+      .from('invitations')
+      .select('id, email, role, status, expires_at, created_at, department_id, job_title')
+      .eq('organization_id', ctx.orgId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
+    const now = Date.now()
+    return (data ?? []).map((invitation) => ({
+      ...invitation,
+      isExpired: new Date(invitation.expires_at).getTime() < now,
+    }))
+  }),
+
+  cancelInvitation: adminProcedure
+    .input(z.object({ invitationId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Revoke rather than delete: keeps an audit trail, and acceptInvite /
+      // signupViaInvite both filter on status='pending', so the outstanding
+      // link stops working the moment this lands.
+      const { data, error } = await supabaseAdmin
+        .from('invitations')
+        .update({ status: 'revoked' as const })
+        .eq('id', input.invitationId)
+        .eq('organization_id', ctx.orgId)
+        .eq('status', 'pending')
+        .select('id, email')
+        .maybeSingle<Pick<InvitationRow, 'id' | 'email'>>()
+
+      if (error) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+      }
+      if (!data) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'That invitation is no longer pending — it may have been accepted or already cancelled.',
+        })
+      }
+
+      await logActivity({
+        supabase: ctx.supabase,
+        orgId: ctx.orgId,
+        actorId: ctx.user.id,
+        action: 'invitation_revoked',
+        entityType: 'member',
+        entityId: data.id,
+        metadata: { email: data.email },
+      })
+
+      return { success: true }
+    }),
+
   invite: adminProcedure
     .input(z.object({
       email: z.string().email(),
@@ -41,6 +96,15 @@ export const memberRouter = createTRPCRouter({
           message: seatCheck.reason ?? 'Seat limit reached for your current plan',
         })
       }
+
+      // Supersede any invite already outstanding for this address, so one
+      // email never has two live tokens pointing at different roles.
+      await supabaseAdmin
+        .from('invitations')
+        .update({ status: 'revoked' as const })
+        .eq('organization_id', ctx.orgId)
+        .eq('email', input.email)
+        .eq('status', 'pending')
 
       // Create invitation record
       const { data: invitation, error } = await supabaseAdmin
