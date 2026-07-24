@@ -16,7 +16,11 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Agency Beats",
+  metadataBase: new URL("https://agencybeats.com"),
+  title: {
+    default: "Agency Beats",
+    template: "%s | Agency Beats",
+  },
   description: "Agency Project & Content Operations Platform",
   icons: {
     icon: "/favicon.png",

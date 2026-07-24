@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import {
   Shield,
   Settings,
@@ -374,6 +375,12 @@ const sections: ContentSection[] = [
     ],
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'Client Portal Guide',
+  description: 'How branded client dashboards, approvals, and reporting work in Agency Beats.',
+  alternates: { canonical: '/guide/client-portal' },
+}
 
 export default function ClientPortalGuidePage() {
   return (

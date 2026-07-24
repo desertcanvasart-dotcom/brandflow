@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { MarketingHeader } from '@/components/marketing/marketing-header'
 import { HeroSection } from '@/components/marketing/hero-section'
 import { StatsBar } from '@/components/marketing/stats-bar'
@@ -14,6 +15,10 @@ import { TestimonialsSection } from '@/components/marketing/testimonials-section
 import { PricingSection } from '@/components/marketing/pricing-section'
 import { CTASection } from '@/components/marketing/cta-section'
 import { MarketingFooter } from '@/components/marketing/marketing-footer'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 export default function MarketingPage() {
   return (

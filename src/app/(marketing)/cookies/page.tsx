@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { LegalPageLayout } from '@/components/marketing/legal-page-layout'
 
 const sections = [
@@ -64,6 +65,12 @@ const sections = [
     ],
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'Cookie Policy',
+  description: 'How Agency Beats uses cookies and similar technologies.',
+  alternates: { canonical: '/cookies' },
+}
 
 export default function CookiesPage() {
   return (

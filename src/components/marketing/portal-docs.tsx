@@ -74,7 +74,7 @@ export function PortalDocs() {
             </ul>
 
             <a
-              href="#"
+              href="/guide/client-portal"
               className="mt-8 text-indigo-600 hover:text-indigo-500 text-sm font-medium inline-flex items-center gap-1"
             >
               Learn more about the portal

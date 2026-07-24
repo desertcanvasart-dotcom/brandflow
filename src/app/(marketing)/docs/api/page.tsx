@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketingHeader } from '@/components/marketing/marketing-header'
 import { MarketingFooter } from '@/components/marketing/marketing-footer'
@@ -89,6 +90,12 @@ const sections = [
       'Receive real-time notifications for content approvals, project updates, and brand changes.',
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'API Reference',
+  description: 'Integrate Agency Beats into your tools and workflows — authentication, Brands API, Content API, and webhooks.',
+  alternates: { canonical: '/docs/api' },
+}
 
 export default function ApiDocsPage() {
   return (
@@ -241,14 +248,15 @@ export default function ApiDocsPage() {
               Check out our SDKs or reach out to our developer support team.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="#"
-                className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full px-6 py-2.5 text-sm font-medium hover:shadow-lg hover:shadow-indigo-500/25 transition-all"
+              {/* No SDK downloads exist yet — inert rather than a fake link */}
+              <span
+                aria-label="SDKs (coming soon)"
+                className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full px-6 py-2.5 text-sm font-medium opacity-50 cursor-not-allowed"
               >
-                View SDKs
-              </a>
+                View SDKs (coming soon)
+              </span>
               <a
-                href="#"
+                href="/contact"
                 className="inline-flex items-center justify-center border border-slate-600 text-slate-300 hover:border-indigo-400 hover:text-white rounded-full px-6 py-2.5 text-sm font-medium transition-all"
               >
                 Developer Support

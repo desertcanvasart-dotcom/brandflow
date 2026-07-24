@@ -5,12 +5,14 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Root-relative so the header works on inner pages too — a bare "#pricing"
+// resolves against the current path and goes nowhere off the homepage.
 const navLinks = [
-  { label: "Product", href: "#product-preview" },
-  { label: "Solutions", href: "#solutions" },
-  { label: "Integrations", href: "#integrations" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Resources", href: "#portal" },
+  { label: "Product", href: "/#product-preview" },
+  { label: "Solutions", href: "/#solutions" },
+  { label: "Integrations", href: "/#integrations" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "Resources", href: "/#portal" },
 ];
 
 export function MarketingHeader() {

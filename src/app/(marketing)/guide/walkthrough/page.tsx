@@ -63,9 +63,10 @@ import {
 /* ------------------------------------------------------------------ */
 
 export const metadata: Metadata = {
-  title: 'User Walkthrough | Agency Beats',
+  title: 'User Walkthrough',
   description:
     'Complete guide to every feature in Agency Beats — from authentication to AI agents, Gantt timelines, client portals, and more.',
+  alternates: { canonical: '/guide/walkthrough' },
 }
 
 /* ------------------------------------------------------------------ */

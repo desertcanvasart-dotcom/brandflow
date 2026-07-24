@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketingHeader } from '@/components/marketing/marketing-header'
 import { MarketingFooter } from '@/components/marketing/marketing-footer'
@@ -98,6 +99,12 @@ const values = [
       'Technology should simplify operations, not complicate them. We remove friction from the daily work of agencies and marketing teams.',
   },
 ]
+
+export const metadata: Metadata = {
+  title: 'About',
+  description: 'The team and story behind Agency Beats — the project and content operations platform built for agencies.',
+  alternates: { canonical: '/about' },
+}
 
 export default function AboutPage() {
   return (

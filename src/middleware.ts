@@ -13,6 +13,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth/google-calendar') ||
     pathname.startsWith('/api/cron') ||
     pathname.startsWith('/api/notifications/track') ||
+    pathname.startsWith('/api/contact') ||
+    pathname.startsWith('/api/newsletter') ||
     pathname.startsWith('/api/meet') ||
     pathname.startsWith('/meet') ||
     pathname.includes('.')

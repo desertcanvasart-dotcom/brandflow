@@ -59,7 +59,8 @@ export default function SignupPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+        <h1 className="sr-only">Create your Agency Beats account</h1>
+        <CardTitle className="text-2xl font-bold" aria-hidden="true">Create your account</CardTitle>
         <CardDescription>Get started with Agency Beats</CardDescription>
       </CardHeader>
       <CardContent>
@@ -68,6 +69,8 @@ export default function SignupPage() {
             <Label htmlFor="displayName">Your name</Label>
             <Input
               id="displayName"
+              name="displayName"
+              autoComplete="name"
               placeholder="John Doe"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -78,6 +81,8 @@ export default function SignupPage() {
             <Label htmlFor="orgName">Organization name</Label>
             <Input
               id="orgName"
+              name="orgName"
+              autoComplete="organization"
               placeholder="Acme Agency"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
@@ -88,7 +93,9 @@ export default function SignupPage() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -99,7 +106,9 @@ export default function SignupPage() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              name="password"
               type="password"
+              autoComplete="new-password"
               placeholder="Min 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
