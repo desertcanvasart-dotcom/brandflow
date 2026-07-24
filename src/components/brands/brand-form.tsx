@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Loader2, Upload, X } from 'lucide-react'
 import { trpc } from '@/trpc/client'
 import { toast } from 'sonner'
+import { useFileUpload } from '@/hooks/use-file-upload'
 import { PLATFORM_LABELS } from '@/lib/constants'
 import type { Database } from '@/types/database'
 
@@ -26,6 +28,7 @@ interface BrandFormProps {
     name: string
     description: string | null
     website_url: string | null
+    logo_url: string | null
     platforms: ContentPlatform[]
   }
 }
@@ -33,10 +36,13 @@ interface BrandFormProps {
 export function BrandForm({ brand }: BrandFormProps) {
   const router = useRouter()
   const utils = trpc.useUtils()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { upload, uploading } = useFileUpload()
 
   const [name, setName] = useState(brand?.name ?? '')
   const [description, setDescription] = useState(brand?.description ?? '')
   const [websiteUrl, setWebsiteUrl] = useState(brand?.website_url ?? '')
+  const [logoUrl, setLogoUrl] = useState<string | null>(brand?.logo_url ?? null)
   const [platforms, setPlatforms] = useState<ContentPlatform[]>(brand?.platforms ?? [])
 
   const createMutation = trpc.brand.create.useMutation({
@@ -68,6 +74,29 @@ export function BrandForm({ brand }: BrandFormProps) {
     )
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    try {
+      const url = await upload(file, {
+        folder: 'brand-logos',
+        maxSizeBytes: 5 * 1024 * 1024,
+      })
+      setLogoUrl(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      // Allow re-selecting the same file after a failure
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
@@ -78,6 +107,7 @@ export function BrandForm({ brand }: BrandFormProps) {
         name,
         description,
         websiteUrl: websiteUrl || undefined,
+        logoUrl: logoUrl ?? '',
         platforms,
       })
     } else {
@@ -85,6 +115,7 @@ export function BrandForm({ brand }: BrandFormProps) {
         name,
         description,
         websiteUrl: websiteUrl || undefined,
+        logoUrl: logoUrl ?? undefined,
         platforms,
       })
     }
@@ -126,6 +157,62 @@ export function BrandForm({ brand }: BrandFormProps) {
               onChange={(e) => setWebsiteUrl(e.target.value)}
               placeholder="https://example.com"
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Logo</Label>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`${name || 'Brand'} logo`}
+                  className="h-14 w-14 rounded-lg border object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg border bg-muted text-lg font-bold text-muted-foreground">
+                  {name.charAt(0).toUpperCase() || '?'}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {logoUrl ? 'Replace' : 'Upload logo'}
+                    </>
+                  )}
+                </Button>
+                {logoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLogoUrl(null)}
+                  >
+                    <X className="mr-1 h-4 w-4" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB.</p>
           </div>
         </CardContent>
       </Card>

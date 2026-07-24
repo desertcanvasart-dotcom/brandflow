@@ -19,6 +19,49 @@ interface LinkedInOrgsData {
   profileName: string
 }
 
+/**
+ * GET — return the organizations awaiting selection, for the picker dialog.
+ *
+ * The list is only available in the httpOnly `linkedin_orgs_data` cookie the
+ * OAuth callback set, so the client cannot read it directly. Only display
+ * fields are returned here — never the tokens held alongside them.
+ */
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const orgsDataCookie = request.cookies.get('linkedin_orgs_data')?.value
+
+  if (!orgsDataCookie) {
+    return NextResponse.json(
+      { error: 'No organization selection data found. Please restart the LinkedIn connection flow.' },
+      { status: 404 },
+    )
+  }
+
+  let orgsData: LinkedInOrgsData
+
+  try {
+    orgsData = JSON.parse(orgsDataCookie) as LinkedInOrgsData
+  } catch {
+    return NextResponse.json({ error: 'Invalid organization selection data' }, { status: 400 })
+  }
+
+  return NextResponse.json({
+    brandId: orgsData.brandId,
+    organizations: orgsData.organizations.map((org) => ({
+      id: org.id,
+      name: org.name,
+      logoUrl: org.logoUrl,
+      vanityName: org.vanityName,
+    })),
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Verify the user is authenticated
@@ -52,6 +95,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid organization selection data' }, { status: 400 })
     }
 
+    // The cookie is the trusted record of which brand this OAuth run was for —
+    // don't let a mismatched body attach the connection to a different brand.
+    if (brandId !== orgsData.brandId) {
+      return NextResponse.json(
+        { error: 'Brand mismatch. Please restart the LinkedIn connection flow.' },
+        { status: 400 },
+      )
+    }
+
     // Find the selected organization
     const org = orgsData.organizations.find((o) => o.id === organizationId)
 
@@ -77,7 +129,9 @@ export async function POST(request: NextRequest) {
           platform_user_name: profileName,
           platform_page_id: org.id,
           platform_page_name: org.name,
-          platform_page_url: `https://linkedin.com/company/${org.vanityName}`,
+          platform_page_url: org.vanityName
+            ? `https://linkedin.com/company/${org.vanityName}`
+            : null,
           scopes,
           connected_by: user.id,
           is_active: true,

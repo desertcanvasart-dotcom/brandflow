@@ -179,9 +179,10 @@ export async function GET(request: NextRequest) {
       return response
     }
 
-    // Multiple pages — store data in cookie for page selection
+    // Multiple pages — store data in cookie and send the user to the brand's
+    // Social tab, where the page picker reads it back and completes the connect.
     const response = NextResponse.redirect(
-      new URL('/settings?section=social-media&meta=select_page', process.env.NEXT_PUBLIC_APP_URL!),
+      new URL(`/brands/${brandId}?tab=social&meta=select_page`, process.env.NEXT_PUBLIC_APP_URL!),
     )
 
     response.cookies.set('meta_pages_data', JSON.stringify({

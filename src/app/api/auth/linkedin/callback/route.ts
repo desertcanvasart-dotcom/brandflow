@@ -130,9 +130,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (organizations.length > 1) {
-      // Multiple organizations -- store data in cookie for org selection
+      // Multiple organizations -- store data in cookie and send the user to the
+      // brand's Social tab, where the picker reads it back and completes the connect.
       const response = NextResponse.redirect(
-        new URL('/settings?section=social-media&linkedin=select_org', process.env.NEXT_PUBLIC_APP_URL!),
+        new URL(`/brands/${brandId}?tab=social&linkedin=select_org`, process.env.NEXT_PUBLIC_APP_URL!),
       )
 
       response.cookies.set('linkedin_orgs_data', JSON.stringify({

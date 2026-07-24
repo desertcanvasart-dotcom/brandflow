@@ -17,6 +17,8 @@ import { ProjectOverview } from '@/components/projects/project-overview'
 import { ProjectTeam } from '@/components/projects/project-team'
 import { IntakeTab } from '@/components/intake/intake-tab'
 import { ProjectHealthBadge } from '@/components/projects/project-health-badge'
+import { ProjectSettingsDialog } from '@/components/projects/project-settings-dialog'
+import { usePermissions } from '@/hooks/use-permissions'
 import { ProjectTaskBoard } from '@/components/tasks/project-task-board'
 import { TaskSelectionDrawer } from '@/components/tasks/task-selection-drawer'
 import { ProjectEmailTab } from '@/components/email/project-email-tab'
@@ -35,6 +37,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const searchParams = useSearchParams()
+  const { canManageProjects } = usePermissions()
   const { data: project, isLoading } = trpc.project.getById.useQuery({ id })
   const { data: projectMeetings } = trpc.meeting.list.useQuery(
     { projectId: id },
@@ -44,6 +47,9 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
   // Task drawer state
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerServiceType, setDrawerServiceType] = useState<string | undefined>()
+
+  // Project settings dialog state
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Auto-open drawer from URL params (e.g. after project creation)
   useEffect(() => {
@@ -111,10 +117,16 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 Room
               </Button>
             </Link>
-            <Button variant="outline" size="sm">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
+            {canManageProjects && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            )}
           </div>
         </div>
 
@@ -241,6 +253,15 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <ChatPanel projectId={project.id} />
           </TabsContent>
         </Tabs>
+
+        {/* Project Settings — manager+ only, matching the update/delete procedures */}
+        {canManageProjects && (
+          <ProjectSettingsDialog
+            project={project}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+          />
+        )}
 
         {/* Task Selection Drawer */}
         <TaskSelectionDrawer

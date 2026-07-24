@@ -15,6 +15,48 @@ interface MetaPagesData {
   expiresIn: number
 }
 
+/**
+ * GET — return the Pages awaiting selection, for the picker dialog.
+ *
+ * The page list is only available in the httpOnly `meta_pages_data` cookie the
+ * OAuth callback set, so the client cannot read it directly. Only display
+ * fields are returned here — never the access tokens held alongside them.
+ */
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const pagesDataCookie = request.cookies.get('meta_pages_data')?.value
+
+  if (!pagesDataCookie) {
+    return NextResponse.json(
+      { error: 'No page selection data found. Please restart the Meta connection flow.' },
+      { status: 404 },
+    )
+  }
+
+  let pagesData: MetaPagesData
+
+  try {
+    pagesData = JSON.parse(pagesDataCookie) as MetaPagesData
+  } catch {
+    return NextResponse.json({ error: 'Invalid page selection data' }, { status: 400 })
+  }
+
+  return NextResponse.json({
+    brandId: pagesData.brandId,
+    pages: pagesData.pages.map((page) => ({
+      id: page.id,
+      name: page.name,
+      picture: page.avatarUrl,
+    })),
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Verify the user is authenticated
@@ -46,6 +88,15 @@ export async function POST(request: NextRequest) {
       pagesData = JSON.parse(pagesDataCookie) as MetaPagesData
     } catch {
       return NextResponse.json({ error: 'Invalid page selection data' }, { status: 400 })
+    }
+
+    // The cookie is the trusted record of which brand this OAuth run was for —
+    // don't let a mismatched body attach the connection to a different brand.
+    if (brandId !== pagesData.brandId) {
+      return NextResponse.json(
+        { error: 'Brand mismatch. Please restart the Meta connection flow.' },
+        { status: 400 },
+      )
     }
 
     // Find the selected page
