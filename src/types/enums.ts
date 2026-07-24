@@ -82,6 +82,7 @@ export type ActivityAction =
   | 'deliverable_uploaded'
   | 'meeting_created'
   | 'user_invited'
+  | 'invitation_revoked'
   | 'role_changed'
   | 'integration_connected'
   | 'integration_disconnected'
